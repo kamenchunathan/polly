@@ -1,3 +1,15 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import (
+    Poll,
+    PollCharField,
+    PollChoiceField,
+    PollMultiChoiceField,
+    PollTextField,
+)
+
+admin.site.register(Poll)
+admin.site.register(PollCharField)
+admin.site.register(PollTextField)
+admin.site.register(PollChoiceField)
+admin.site.register(PollMultiChoiceField)
