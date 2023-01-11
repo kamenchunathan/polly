@@ -1,0 +1,19 @@
+{
+  "name": "elm-pages-app",
+  "scripts": {
+    "postinstall": "elm-tooling install",
+    "dev": "elm-pages dev",
+    "dev:tailwind": "npx tailwindcss -i src/style.css -o public/style.css --watch",
+    "build": "elm-pages build",
+    "build:tailwind": "npx tailwindcss -i src/style.css -o public/style.css --watch"
+  },
+  "devDependencies": {
+    "elm-optimize-level-2": "0.2.3",
+    "elm-pages": "2.1.10",
+    "elm-review": "^2.5.5",
+    "elm-tooling": "^1.4.0"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.2.4"
+  }
+}
