@@ -5,15 +5,33 @@ from polls import models
 from polls.models import (
     Poll as PollModel,
     PollCharField as PollCharFieldModel,
+    PollCharFieldAnswer as PollCharFieldAnswerModel,
     PollChoiceField as PollChoiceFieldModel,
+    PollChoiceFieldAnswer as PollChoiceFieldAnswerModel,
     PollMultiChoiceField as PollMultiChoiceFieldModel,
-    PollTextField as PollTextFieldModel
+    PollMultiChoiceFieldAnswer as PollMultiChoiceFieldAnswerModel,
+    PollTextField as PollTextFieldModel,
+    PollTextFieldAnswer as PollTextFieldAnswerModel
 )
+
+from authentication.models import User as UserModel
+
+class User(DjangoObjectType):
+    class Meta:
+        model = UserModel
+        fields = ('id', 'username')
+
 
 class PollCharField(DjangoObjectType):
     class Meta:
         model = PollCharFieldModel
         exclude = ('poll',)
+ 
+ 
+class PollCharFieldAnswer(DjangoObjectType):
+    class Meta:
+        model = PollCharFieldAnswerModel
+        exclude = ('field',)
  
  
 class PollTextField(DjangoObjectType):
@@ -22,15 +40,34 @@ class PollTextField(DjangoObjectType):
         exclude = ('poll',)
 
 
+class PollTextFieldAnswer(DjangoObjectType):
+    class Meta:
+        model =PollTextFieldAnswerModel
+        exclude = ('field',)
+ 
+ 
 class PollChoiceField(DjangoObjectType):
     class Meta:
         model = PollChoiceFieldModel
         exclude = ('poll',)
-        
+
+
+class PollChoiceFieldAnswer(DjangoObjectType):
+    class Meta:
+        model = PollChoiceFieldAnswerModel
+        exclude = ('field',)
+ 
+ 
 class PollMultiChoiceField(DjangoObjectType):
     class Meta:
         model = PollMultiChoiceFieldModel
         exclude = ('poll',)
+
+
+class PollMultiChoiceFieldAnswer(DjangoObjectType):
+    class Meta:
+        model = PollMultiChoiceFieldAnswerModel
+        exclude = ('field',)
 
 
 class PollField(graphene.Union):
