@@ -1,14 +1,14 @@
 import json
 from json import JSONDecodeError
 
+from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import authenticate
+from django.views.decorators.http import require_GET, require_POST
 
-from .models import User, ApiToken
 from .forms import NewUserForm
+from .models import ApiToken, User
 
 
 def get_or_create_token(user: User) -> ApiToken :
@@ -89,4 +89,13 @@ def sign_up(request):
         }
     )
 
+@require_GET
+def user_details(request):
+    user = authenticate(request)
+    
+    if user is None:
+        return JsonResponse({'user': 'Unauthenticated'})
 
+    return JsonResponse(
+        {'user': { 'username': user.username } }
+    )
