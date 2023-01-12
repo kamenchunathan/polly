@@ -8,6 +8,7 @@
     "build:tailwind": "npx tailwindcss -i src/style.css -o public/style.css --watch"
   },
   "devDependencies": {
+    "elm-graphql": "^1.0.6",
     "elm-optimize-level-2": "0.2.3",
     "elm-pages": "2.1.10",
     "elm-review": "^2.5.5",
