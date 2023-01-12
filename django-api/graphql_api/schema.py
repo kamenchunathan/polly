@@ -1,6 +1,10 @@
 from typing import Iterable
+
 import graphene
 from graphene_django import DjangoObjectType
+from graphene_django.forms.mutation import DjangoModelFormMutation
+
+from authentication.models import User as UserModel
 from polls import models
 from polls.models import (
     Poll as PollModel,
@@ -13,8 +17,19 @@ from polls.models import (
     PollTextField as PollTextFieldModel,
     PollTextFieldAnswer as PollTextFieldAnswerModel
 )
+from polls.forms import (
+    PollCharFieldForm,
+    PollTextFieldForm,
+    PollChoiceFieldForm,
+    PollMultiChoiceFieldForm,
+    PollCharFieldAnswerForm,
+    PollTextFieldAnswerForm,
+    PollChoiceFieldAnswerForm,
+    PollMultiChoiceFieldAnswerForm
+)
 
-from authentication.models import User as UserModel
+# -------------------------------- QUERIES -------------------------------
+
 
 class User(DjangoObjectType):
     class Meta:
@@ -26,26 +41,26 @@ class PollCharField(DjangoObjectType):
     class Meta:
         model = PollCharFieldModel
         exclude = ('poll',)
- 
- 
+
+
 class PollCharFieldAnswer(DjangoObjectType):
     class Meta:
         model = PollCharFieldAnswerModel
         exclude = ('field',)
- 
- 
+
+
 class PollTextField(DjangoObjectType):
     class Meta:
-        model =PollTextFieldModel
+        model = PollTextFieldModel
         exclude = ('poll',)
 
 
 class PollTextFieldAnswer(DjangoObjectType):
     class Meta:
-        model =PollTextFieldAnswerModel
+        model = PollTextFieldAnswerModel
         exclude = ('field',)
- 
- 
+
+
 class PollChoiceField(DjangoObjectType):
     class Meta:
         model = PollChoiceFieldModel
@@ -56,8 +71,8 @@ class PollChoiceFieldAnswer(DjangoObjectType):
     class Meta:
         model = PollChoiceFieldAnswerModel
         exclude = ('field',)
- 
- 
+
+
 class PollMultiChoiceField(DjangoObjectType):
     class Meta:
         model = PollMultiChoiceFieldModel
@@ -72,8 +87,9 @@ class PollMultiChoiceFieldAnswer(DjangoObjectType):
 
 class PollField(graphene.Union):
     class Meta:
-        types = (PollCharField, PollTextField, PollChoiceField, PollMultiChoiceField)
-    
+        types = (PollCharField, PollTextField,
+                 PollChoiceField, PollMultiChoiceField)
+
 
 class Poll(DjangoObjectType):
     class Meta:
@@ -88,8 +104,6 @@ class Poll(DjangoObjectType):
                 *PollChoiceFieldModel.objects.filter(poll=root),
                 *PollMultiChoiceFieldModel.objects.filter(poll=root)
                 ]
-                
-        
 
 
 class RootQuery(graphene.ObjectType):
@@ -99,8 +113,96 @@ class RootQuery(graphene.ObjectType):
     def resolve_hello(root, info, **kwargs):
         return 'Hello world'
 
-
     def resolve_polls(root, info, **kwargs):
         return PollModel.objects.all()
 
-schema = graphene.Schema(query=RootQuery)
+# -------------------------------- MUTATIONS  -------------------------------
+
+
+class CreatePoll(graphene.Mutation):
+    class Arguments:
+        title = graphene.String(required=True)
+        description = graphene.String()
+
+    poll = graphene.Field(Poll)
+
+    def mutate(root, info, title=None, description=None):
+        poll = PollModel.objects.create(title=title, description=description)
+        return CreatePoll(poll=poll)
+
+
+class AddPollCharField(DjangoModelFormMutation):
+    poll_char_field = graphene.Field(PollCharField)
+
+    class Meta:
+        form_class = PollCharFieldForm
+        return_field_name = 'poll_char_field'
+
+class AddPollTextField(DjangoModelFormMutation):
+    poll_text_field = graphene.Field(PollTextField)
+
+    class Meta:
+        form_class = PollTextFieldForm
+        return_field_name = 'poll_text_field'
+
+
+class AddPollChoiceField(DjangoModelFormMutation):
+    poll_choice_field = graphene.Field(PollChoiceField)
+
+    class Meta:
+        form_class = PollChoiceFieldForm
+        return_field_name = 'poll_choice_field'
+
+
+class AddPollMultiChoiceField(DjangoModelFormMutation):
+    poll_multi_choice_field = graphene.Field(PollMultiChoiceField)
+
+    class Meta:
+        form_class = PollMultiChoiceFieldForm
+        return_field_name = 'poll_multi_choice_field'
+
+
+class AddPollCharFieldAnswer(DjangoModelFormMutation):
+    pollcharfieldanswer = graphene.Field(PollCharFieldAnswer)
+
+    class Meta:
+        form_class = PollCharFieldAnswerForm
+
+
+class AddPollChoiceFieldAnswer(DjangoModelFormMutation):
+    poll_choice_field_answer = graphene.Field(PollChoiceFieldAnswer)
+
+    class Meta:
+        form_class = PollChoiceFieldAnswerForm
+        return_field_name = 'poll_choice_field_answer'
+
+
+class AddPollTextFieldAnswer(DjangoModelFormMutation):
+    poll_text_field_answer = graphene.Field(PollTextFieldAnswer)
+
+    class Meta:
+        form_class = PollTextFieldAnswerForm
+        return_field_name = 'poll_text_field_answer'
+
+
+class AddPollMultiChoiceFieldAnswer(DjangoModelFormMutation):
+    poll_multi_choice_field_answer = graphene.Field(PollMultiChoiceFieldAnswer)
+
+    class Meta:
+        form_class = PollMultiChoiceFieldAnswerForm
+        return_field_name = 'poll_multi_choice_field_answer'
+
+
+
+class Mutation(graphene.ObjectType):
+    create_poll = CreatePoll.Field()
+    add_poll_char_field = AddPollCharField.Field()
+    add_poll_text_field = AddPollTextField.Field()
+    add_poll_choice_field = AddPollChoiceField.Field()
+    add_poll_multi_choice_field = AddPollMultiChoiceField.Field()
+    add_poll_char_field_answer = AddPollCharFieldAnswer.Field()
+    add_poll_text_field_answer = AddPollTextFieldAnswer.Field()
+    add_poll_choice_field_answer = AddPollChoiceFieldAnswer.Field()
+    add_poll_multi_choice_field_answer = AddPollMultiChoiceFieldAnswer.Field()
+ 
+schema = graphene.Schema(query=RootQuery, mutation=Mutation)
