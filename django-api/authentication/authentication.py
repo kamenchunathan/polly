@@ -1,18 +1,23 @@
 from django.contrib.auth.backends import BaseBackend
-from django.utils import  timezone
+from django.utils import timezone
 
 from .models import ApiToken
+
 
 class ExpiringTokenAuthentication(BaseBackend):
     def authenticate(self, request, key=None):
         if key is None:
-             header_parts = request.headers.get('Authorization').split(' ')           
+            auth_header = request.headers.get('Authorization')
+            if auth_header is None:
+                return
 
-             if len(header_parts) < 2:
-                 return
+            header_parts = auth_header.split(' ')
 
-             key = header_parts[1]
-             
+            if len(header_parts) < 2:
+                return
+
+            key = header_parts[1]
+
         try:
             token = ApiToken.objects.get(key=key)
         except:
@@ -22,5 +27,3 @@ class ExpiringTokenAuthentication(BaseBackend):
             return None
 
         return token.user
-        
-    
