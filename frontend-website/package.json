@@ -2,13 +2,16 @@
   "name": "elm-pages-app",
   "scripts": {
     "postinstall": "elm-tooling install",
-    "dev": "elm-pages dev",
-    "dev:tailwind": "npx tailwindcss -i src/style.css -o public/style.css --watch",
+    "dev": "concurrently \"pnpm run dev:elm\" \"pnpm run dev:tailwind\"",
+    "dev:tailwind": "tailwindcss -i src/style.css -o public/style.css --watch",
+    "dev:elm": "elm-pages dev",
     "build": "elm-pages build",
-    "build:tailwind": "npx tailwindcss -i src/style.css -o public/style.css --watch"
+    "build:tailwind": "tailwindcss -i src/style.css -o public/style.css --watch",
+    "gen-api": "elm-graphql http://127.0.0.1:8000/graphql/ --base PollApi"
   },
   "devDependencies": {
-    "elm-graphql": "^1.0.6",
+    "@dillonkearns/elm-graphql": "^4.3.1",
+    "concurrently": "^7.6.0",
     "elm-optimize-level-2": "0.2.3",
     "elm-pages": "2.1.10",
     "elm-review": "^2.5.5",
