@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from django.conf.global_settings import AUTHENTICATION_BACKENDS as DEFAULT_AUTHENTICATION_BACKENDS
+from django.conf.global_settings import AUTHENTICATION_BACKENDS as DEFAULT_AUTH_BACKENDS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,7 +16,8 @@ SECRET_KEY = 'django-insecure-cv896#x62tc5t=7inz(am8rd%)q27dkvcz#oz5h(vcn261jnx1
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'localhost'        
+    'localhost',        
+    '127.0.0.1'
 ]
 
 
@@ -40,6 +41,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -132,7 +134,7 @@ AUTH_USER_MODEL = 'authentication.User'
 
 AUTHENTICATION_BACKENDS = [
     'authentication.authentication.ExpiringTokenAuthentication',
-    *DEFAULT_AUTHENTICATION_BACKENDS
+    *DEFAULT_AUTH_BACKENDS
 ] 
 
 # Api Token Lifetime in Seconds
