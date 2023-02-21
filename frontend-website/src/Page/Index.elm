@@ -11,11 +11,12 @@ import Html as H exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Http
+import Maybe exposing (withDefault)
 import Page exposing (StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Path
-import PollApi.Object.Poll exposing (description, pollFields, title)
+import PollApi.Object.Poll as Poll
 import PollApi.Object.PollCharField as PollCharField
 import PollApi.Object.PollChoiceField as PollChoiceField
 import PollApi.Object.PollMultiChoiceField as PollMultiChoiceField
@@ -36,26 +37,31 @@ type
     Field
     -- short text input (<100 characters)
     = CharField
-        { questionText : String
+        { id : Id
+        , questionText : String
         , answer : Maybe String
         }
       -- long text input
     | TextField
-        { questionText : String
+        { id : Id
+        , questionText : String
         , answer : Maybe String
         }
       -- choice between a list of options
     | ChoiceField
-        { questionText : String
+        { id : Id
+        , questionText : String
         }
       -- list of selected choices from a set of options
     | MultiChoiceField
-        { questionText : String
+        { id : Id
+        , questionText : String
         }
 
 
 type alias Poll =
-    { title : String
+    { id : Id
+    , title : String
     , description : String
     , fields : List Field
     }
@@ -65,6 +71,7 @@ type Msg
     = GetData
     | NoOpString String
     | GotPolls (List Poll)
+    | SetFieldAnswer Id Id String
 
 
 type alias RouteParams =
@@ -132,40 +139,94 @@ update _ _ _ _ msg model =
         GotPolls polls ->
             ( { model | polls = polls }, Cmd.none, Nothing )
 
+        SetFieldAnswer pollId fieldId val ->
+            let
+                polls =
+                    List.map
+                        (\poll ->
+                            if poll.id == pollId then
+                                { poll
+                                    | fields =
+                                        List.map
+                                            (\field ->
+                                                if fieldIdMatches fieldId field then
+                                                    withAnswerText val field
+
+                                                else
+                                                    field
+                                            )
+                                            poll.fields
+                                }
+
+                            else
+                                poll
+                        )
+                        model.polls
+            in
+            ( { model | polls = polls }, Cmd.none, Nothing )
+
+
+withAnswerText : String -> Field -> Field
+withAnswerText answerText field =
+    case field of
+        CharField fieldParams ->
+            CharField { fieldParams | answer = Just answerText }
+
+        TextField fieldParams ->
+            TextField { fieldParams | answer = Just answerText }
+
+        ChoiceField fieldParams ->
+            ChoiceField fieldParams
+
+        MultiChoiceField fieldParams ->
+            MultiChoiceField fieldParams
+
+
+fieldIdMatches : Id -> Field -> Bool
+fieldIdMatches fieldId field =
+    case field of
+        CharField { id } ->
+            fieldId == id
+
+        TextField { id } ->
+            fieldId == id
+
+        ChoiceField { id } ->
+            fieldId == id
+
+        MultiChoiceField { id } ->
+            fieldId == id
+
 
 pollSelectionSet : SelectionSet (List Poll) RootQuery
 pollSelectionSet =
-    pollFields (fragments charFieldFragments)
-        |> SelectionSet.map3 makePoll title description
+    Poll.pollFields (fragments charFieldFragments)
+        |> SelectionSet.map4 Poll Poll.id Poll.title Poll.description
         |> polls
 
 
 charFieldFragments : Fragments Field
 charFieldFragments =
     { onPollCharField =
-        SelectionSet.map
-            (\text -> CharField { questionText = text, answer = Nothing })
+        SelectionSet.map2
+            (\id text -> CharField { id = id, questionText = text, answer = Nothing })
+            PollCharField.id
             PollCharField.text
     , onPollTextField =
-        SelectionSet.map
-            (\text -> TextField { questionText = text, answer = Nothing })
+        SelectionSet.map2
+            (\id text -> TextField { id = id, questionText = text, answer = Nothing })
+            PollTextField.id
             PollTextField.text
     , onPollChoiceField =
-        SelectionSet.map
-            (\text -> ChoiceField { questionText = text })
+        SelectionSet.map2
+            (\id text -> ChoiceField { id = id, questionText = text })
+            PollChoiceField.id
             PollChoiceField.text
     , onPollMultiChoiceField =
-        SelectionSet.map
-            (\text -> MultiChoiceField { questionText = text })
+        SelectionSet.map2
+            (\id text -> MultiChoiceField { id = id, questionText = text })
+            PollMultiChoiceField.id
             PollMultiChoiceField.text
-    }
-
-
-makePoll : String -> String -> List Field -> Poll
-makePoll title description fields =
-    { title = title
-    , description = description
-    , fields = fields
     }
 
 
@@ -237,24 +298,6 @@ view _ _ { polls } _ =
     }
 
 
-viewPollField : Field -> Html Msg
-viewPollField field =
-    case field of
-        CharField { questionText } ->
-            H.div
-                [ HA.class "inline-block" ]
-                [ H.text questionText ]
-
-        TextField { questionText } ->
-            H.span [] [ H.text questionText ]
-
-        ChoiceField { questionText } ->
-            H.span [] [ H.text questionText ]
-
-        MultiChoiceField { questionText } ->
-            H.span [] [ H.text questionText ]
-
-
 viewPolls : List Poll -> Html Msg
 viewPolls polls =
     H.div
@@ -266,8 +309,8 @@ viewPoll : Poll -> Html Msg
 viewPoll poll =
     H.div
         [ HA.class "p-2 m-2 bg-blue-200" ]
-        [ H.p [ HA.class "text-lg " ] [ H.text poll.title ]
-        , H.p [ HA.class "text-sm px-2" ] [ H.text poll.description ]
+        [ H.p [ HA.class "text-lg font-medium" ] [ H.text poll.title ]
+        , H.p [ HA.class "text-sm px-2 font-light" ] [ H.text poll.description ]
 
         -- Question Container
         , H.form
@@ -275,14 +318,38 @@ viewPoll poll =
             (List.indexedMap
                 (\i x ->
                     -- Question
-                    H.div []
+                    H.div [ HA.class "p-2" ]
                         [ H.text <| String.fromInt (i + 1) ++ ". "
-                        , viewPollField x
+                        , viewPollField poll.id x
                         ]
                 )
                 poll.fields
             )
         ]
+
+
+viewPollField : Id -> Field -> Html Msg
+viewPollField pollId field =
+    case field of
+        CharField { questionText, answer, id } ->
+            H.div
+                [ HA.class "inline-block" ]
+                [ H.label [] [ H.text questionText ]
+                , H.input
+                    [ HA.value (withDefault "" answer)
+                    , HE.onInput (SetFieldAnswer pollId id)
+                    ]
+                    []
+                ]
+
+        TextField { questionText } ->
+            H.span [] [ H.text questionText ]
+
+        ChoiceField { questionText } ->
+            H.span [] [ H.text questionText ]
+
+        MultiChoiceField { questionText } ->
+            H.span [] [ H.text questionText ]
 
 
 navbar : Html Msg
