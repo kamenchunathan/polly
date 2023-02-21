@@ -87,16 +87,18 @@ class PollMultiChoiceFieldAnswer(DjangoObjectType):
 
 class PollField(graphene.Union):
     class Meta:
-        types = (PollCharField, PollTextField,
-                 PollChoiceField, PollMultiChoiceField)
+        types = (PollCharField,    
+                 PollTextField,
+                 PollChoiceField,   
+                 PollMultiChoiceField)
 
 
 class Poll(DjangoObjectType):
     class Meta:
         model = PollModel
-        fields = ('title', 'description')
+        fields = ('id','title', 'description')
 
-    poll_fields = graphene.List(PollField)
+    poll_fields = graphene.NonNull(graphene.List(graphene.NonNull(PollField)))
 
     def resolve_poll_fields(root, info, **kwargs) -> Iterable[PollField]:
         return [*PollCharFieldModel.objects.filter(poll=root),
@@ -107,16 +109,18 @@ class Poll(DjangoObjectType):
 
 
 class RootQuery(graphene.ObjectType):
-    hello = graphene.String()
-    polls = graphene.List(Poll)
+    hello = graphene.String(required=True)
+    polls = graphene.NonNull(graphene.List( graphene.NonNull(Poll)))
 
     def resolve_hello(root, info, **kwargs):
-        return 'Hello world'
+        return 'Hujambo mkuu'
 
     def resolve_polls(root, info, **kwargs):
         return PollModel.objects.all()
 
+#----------------------------------------------------------------------------
 # -------------------------------- MUTATIONS  -------------------------------
+#----------------------------------------------------------------------------
 
 
 class CreatePoll(graphene.Mutation):
