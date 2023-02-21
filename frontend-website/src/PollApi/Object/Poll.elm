@@ -19,6 +19,11 @@ import PollApi.ScalarCodecs
 import PollApi.Union
 
 
+id : SelectionSet PollApi.ScalarCodecs.Id PollApi.Object.Poll
+id =
+    Object.selectionForField "ScalarCodecs.Id" "id" [] (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapCodecs |> .codecId |> .decoder)
+
+
 title : SelectionSet String PollApi.Object.Poll
 title =
     Object.selectionForField "String" "title" [] Decode.string
