@@ -345,7 +345,7 @@ view _ _ { polls } _ =
     { title = "Home | Polls"
     , body =
         [ H.div
-            [ HA.class "h-screen bg-neutral-50" ]
+            [ HA.class "h-full bg-neutral-50" ]
             [ navbar
             , header
             , viewPolls polls
