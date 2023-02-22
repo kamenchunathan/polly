@@ -171,7 +171,7 @@ update _ _ _ _ msg model =
             in
             ( { model | polls = polls }, Cmd.none, Nothing )
 
-        SubmitPoll pollId ->
+        SubmitPoll _ ->
             ( model, Cmd.none, Nothing )
 
 
@@ -277,11 +277,6 @@ resultToMessage res =
         |> GotPolls
 
 
-
--- _ ->
---     ( model, Cmd.none, Nothing )
-
-
 subscriptions :
     Maybe PageUrl
     -> routeParams
@@ -332,7 +327,7 @@ view _ _ { polls } _ =
     { title = "Home | Polls"
     , body =
         [ H.div
-            [ HA.class "h-full bg-neutral-50" ]
+            [ HA.class "min-h-screen h-full bg-neutral-100" ]
             [ navbar
             , header
             , viewPolls polls
@@ -382,7 +377,7 @@ viewPollField pollId i field =
                 , H.input
                     [ HA.class <|
                         "flex-1 p-1 px-4 max-h-14 rounded-sm border-2 border-neutral-300 focus:border-0 "
-                            ++ "bg-neutral-100 hover:bg-neutral-200 focus:bg-white focus:outline-neutral-500 "
+                            ++ "bg-neutral-50 hover:bg-neutral-200 focus:bg-white focus:outline-neutral-300 "
                             ++ "focus:outline-1"
                     , HA.value (withDefault "" answer)
                     , HA.placeholder "answer.."
@@ -398,8 +393,8 @@ viewPollField pollId i field =
                 , H.div []
                     [ H.textarea
                         [ HA.class <|
-                            "box-border h-max min-h-fit w-11/12 p-2 m-2 ml-8 rounded-sm border-2 border-neutral-300 bg-neutral-100 "
-                                ++ "hover:bg-neutral-200 focus:bg-white h-fit focus:outline-neutral-500 focus:outline-1 "
+                            "box-border h-max min-h-fit w-11/12 p-2 m-2 ml-8 rounded-sm border-2 border-neutral-300 bg-neutral-50 "
+                                ++ "hover:bg-neutral-200 focus:bg-white h-fit focus:outline-neutral-300 focus:outline-1 "
                                 ++ "overflow-auto resize-none"
                         , HA.value (withDefault "" answer)
                         , HA.placeholder "Your text here"
@@ -422,7 +417,7 @@ viewPollField pollId i field =
                                 [ H.input
                                     [ HA.type_ "radio"
                                     , HA.id <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_ch"
-                                    , HA.name <| "poll" ++ unwrapId pollId
+                                    , HA.name <| "poll" ++ unwrapId pollId ++ unwrapId id
                                     , HA.value choice
                                     , HE.onInput <| SetFieldAnswer pollId (Id <| unwrapId id ++ "_ch")
                                     ]
@@ -450,7 +445,7 @@ viewPollField pollId i field =
                                 [ H.input
                                     [ HA.type_ "checkbox"
                                     , HA.id <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_m"
-                                    , HA.name <| "poll" ++ unwrapId pollId
+                                    , HA.name <| "poll" ++ unwrapId pollId ++ unwrapId id
                                     , HA.value choice
                                     , HE.onInput <| SetFieldAnswer pollId (Id <| unwrapId id ++ "_m")
                                     ]
