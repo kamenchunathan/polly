@@ -23,8 +23,9 @@ import PollApi.Object.PollMultiChoiceField as PollMultiChoiceField
 import PollApi.Object.PollTextField as PollTextField
 import PollApi.Query exposing (polls)
 import PollApi.Scalar exposing (Id(..))
-import PollApi.Union.PollField exposing (Fragments, fragments, maybeFragments)
+import PollApi.Union.PollField exposing (Fragments, fragments)
 import Shared
+import String exposing (fromInt)
 import View exposing (View)
 
 
@@ -51,11 +52,15 @@ type
     | ChoiceField
         { id : Id
         , questionText : String
+        , choices : List String
+        , selectedChoice : Maybe String
         }
       -- list of selected choices from a set of options
     | MultiChoiceField
         { id : Id
         , questionText : String
+        , choices : List String
+        , selectedChoices : List String
         }
 
 
@@ -72,6 +77,7 @@ type Msg
     | NoOpString String
     | GotPolls (List Poll)
     | SetFieldAnswer Id Id String
+    | SubmitPoll Id
 
 
 type alias RouteParams =
@@ -165,6 +171,18 @@ update _ _ _ _ msg model =
             in
             ( { model | polls = polls }, Cmd.none, Nothing )
 
+        SubmitPoll pollId ->
+            Debug.todo "branch 'SubmitPoll _' not implemented"
+
+
+
+-- SetMultiChoiceFieldAnswer ->
+--     let
+--         polls =
+--             []
+--     in
+--     ( { model | polls = polls }, Cmd.none, Nothing )
+
 
 withAnswerText : String -> Field -> Field
 withAnswerText answerText field =
@@ -176,26 +194,34 @@ withAnswerText answerText field =
             TextField { fieldParams | answer = Just answerText }
 
         ChoiceField fieldParams ->
-            ChoiceField fieldParams
+            ChoiceField { fieldParams | selectedChoice = Just answerText }
 
-        MultiChoiceField fieldParams ->
-            MultiChoiceField fieldParams
+        MultiChoiceField ({ selectedChoices } as fieldParams) ->
+            if List.member answerText selectedChoices then
+                let
+                    _ =
+                        Debug.log "ping pong" "wow"
+                in
+                MultiChoiceField { fieldParams | selectedChoices = List.filter (\x -> x /= answerText) selectedChoices }
+
+            else
+                MultiChoiceField { fieldParams | selectedChoices = answerText :: selectedChoices }
 
 
 fieldIdMatches : Id -> Field -> Bool
 fieldIdMatches fieldId field =
     case field of
         CharField { id } ->
-            fieldId == id
+            fieldId == (Id <| unwrapId id ++ "_c")
 
         TextField { id } ->
-            fieldId == id
+            fieldId == (Id <| unwrapId id ++ "_t")
 
         ChoiceField { id } ->
-            fieldId == id
+            fieldId == (Id <| unwrapId id ++ "_ch")
 
         MultiChoiceField { id } ->
-            fieldId == id
+            fieldId == (Id <| unwrapId id ++ "_m")
 
 
 pollSelectionSet : SelectionSet (List Poll) RootQuery
@@ -209,24 +235,52 @@ charFieldFragments : Fragments Field
 charFieldFragments =
     { onPollCharField =
         SelectionSet.map2
-            (\id text -> CharField { id = id, questionText = text, answer = Nothing })
+            (\id text ->
+                CharField
+                    { id = id
+                    , questionText = text
+                    , answer = Nothing
+                    }
+            )
             PollCharField.id
             PollCharField.text
     , onPollTextField =
         SelectionSet.map2
-            (\id text -> TextField { id = id, questionText = text, answer = Nothing })
+            (\id text ->
+                TextField
+                    { id = id
+                    , questionText = text
+                    , answer = Nothing
+                    }
+            )
             PollTextField.id
             PollTextField.text
     , onPollChoiceField =
-        SelectionSet.map2
-            (\id text -> ChoiceField { id = id, questionText = text })
+        SelectionSet.map3
+            (\id text choices ->
+                ChoiceField
+                    { id = id
+                    , questionText = text
+                    , choices = choices
+                    , selectedChoice = Nothing
+                    }
+            )
             PollChoiceField.id
             PollChoiceField.text
+            PollChoiceField.choices
     , onPollMultiChoiceField =
-        SelectionSet.map2
-            (\id text -> MultiChoiceField { id = id, questionText = text })
+        SelectionSet.map3
+            (\id text choices ->
+                MultiChoiceField
+                    { id = id
+                    , questionText = text
+                    , choices = choices
+                    , selectedChoices = []
+                    }
+            )
             PollMultiChoiceField.id
             PollMultiChoiceField.text
+            PollMultiChoiceField.choices
     }
 
 
@@ -293,7 +347,11 @@ view _ _ { polls } _ =
         [ navbar
         , header
         , viewPolls polls
-        , getDataButton
+        , if List.isEmpty polls then
+            getDataButton
+
+          else
+            H.div [] []
         ]
     }
 
@@ -308,48 +366,123 @@ viewPolls polls =
 viewPoll : Poll -> Html Msg
 viewPoll poll =
     H.div
-        [ HA.class "p-2 m-2 bg-blue-200" ]
+        [ HA.class "p-2 m-2" ]
         [ H.p [ HA.class "text-lg font-medium" ] [ H.text poll.title ]
         , H.p [ HA.class "text-sm px-2 font-light" ] [ H.text poll.description ]
 
         -- Question Container
         , H.form
             [ HA.class "py-2 px-4" ]
-            (List.indexedMap
-                (\i x ->
-                    -- Question
-                    H.div [ HA.class "p-2" ]
-                        [ H.text <| String.fromInt (i + 1) ++ ". "
-                        , viewPollField poll.id x
-                        ]
-                )
-                poll.fields
-            )
+            (List.indexedMap (viewPollField poll.id) poll.fields)
+        , H.div [ HA.class "flex flex-row justify-end p-4" ] [ submitBtn poll.id ]
         ]
 
 
-viewPollField : Id -> Field -> Html Msg
-viewPollField pollId field =
+viewPollField : Id -> Int -> Field -> Html Msg
+viewPollField pollId i field =
+    let
+        numbering =
+            fromInt (i + 1) ++ ". "
+    in
     case field of
         CharField { questionText, answer, id } ->
             H.div
-                [ HA.class "inline-block" ]
-                [ H.label [] [ H.text questionText ]
+                [ HA.class "p-2" ]
+                [ H.label [ HA.class "pr-2" ] [ H.text (numbering ++ questionText) ]
                 , H.input
                     [ HA.value (withDefault "" answer)
-                    , HE.onInput (SetFieldAnswer pollId id)
+                    , HE.onInput (SetFieldAnswer pollId (Id <| unwrapId id ++ "_c"))
+                    , HA.class "p-1 rounded-sm"
                     ]
                     []
                 ]
 
-        TextField { questionText } ->
-            H.span [] [ H.text questionText ]
+        TextField { id, questionText, answer } ->
+            H.div
+                [ HA.class "p-2" ]
+                [ H.label [] [ H.text (numbering ++ questionText) ]
+                , H.div []
+                    [ H.textarea
+                        [ HA.class "m-2 ml-8 w-4/6 p-2 rounded-sm"
+                        , HA.value (withDefault "" answer)
+                        , HA.placeholder "Your text here"
+                        , HE.onInput (SetFieldAnswer pollId (Id <| unwrapId id ++ "_t"))
+                        ]
+                        []
+                    ]
+                ]
 
-        ChoiceField { questionText } ->
-            H.span [] [ H.text questionText ]
+        ChoiceField { id, questionText, choices } ->
+            H.fieldset
+                [ HA.class "p-2" ]
+                [ H.legend [] [ H.text (numbering ++ questionText) ]
+                , H.div [ HA.class "px-4" ]
+                    (List.indexedMap
+                        (\j choice ->
+                            H.div
+                                []
+                                [ H.input
+                                    [ HA.type_ "radio"
+                                    , HA.id <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_ch"
+                                    , HA.name <| "poll" ++ unwrapId pollId
+                                    , HA.value choice
+                                    , HE.onInput <| SetFieldAnswer pollId (Id <| unwrapId id ++ "_ch")
+                                    ]
+                                    []
+                                , H.label
+                                    [ HA.for <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_ch"
+                                    , HA.class "px-2"
+                                    ]
+                                    [ H.text choice ]
+                                ]
+                        )
+                        choices
+                    )
+                ]
 
-        MultiChoiceField { questionText } ->
-            H.span [] [ H.text questionText ]
+        MultiChoiceField { id, questionText, choices } ->
+            H.fieldset
+                [ HA.class "p-2" ]
+                [ H.legend [] [ H.text (numbering ++ questionText) ]
+                , H.div [ HA.class "px-4" ]
+                    (List.indexedMap
+                        (\j choice ->
+                            H.div
+                                []
+                                [ H.input
+                                    [ HA.type_ "checkbox"
+                                    , HA.id <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_m"
+                                    , HA.name <| "poll" ++ unwrapId pollId
+                                    , HA.value choice
+                                    , HE.onInput <| SetFieldAnswer pollId (Id <| unwrapId id ++ "_m")
+                                    ]
+                                    []
+                                , H.label
+                                    [ HA.for <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_m"
+                                    , HA.class "px-2"
+                                    ]
+                                    [ H.text choice ]
+                                ]
+                        )
+                        choices
+                    )
+                ]
+
+
+unwrapId : Id -> String
+unwrapId (Id inner) =
+    inner
+
+
+submitBtn : Id -> Html Msg
+submitBtn pollId =
+    H.div [ HA.class "text-center mx-2" ]
+        [ H.button
+            [ HE.onClick (SubmitPoll pollId)
+            , HA.class "bg-slate-500 p-2 rounded-md text-lg text-white m-2"
+            ]
+            [ H.text "Submit Poll" ]
+        ]
 
 
 navbar : Html Msg
@@ -388,7 +521,7 @@ getDataButton =
     H.div [ HA.class "text-center" ]
         [ H.button
             [ HE.onClick GetData
-            , HA.class "bg-blue-600 p-2  rounded-md text-xl text-white m-2"
+            , HA.class "bg-slate-500 p-2  rounded-md text-lg text-white m-2"
             ]
-            [ H.text "Fetch Polls" ]
+            [ H.text "All Public Polls" ]
         ]
