@@ -138,7 +138,7 @@ update _ _ _ _ msg model =
         NoOpString s ->
             let
                 _ =
-                    Debug.log "server test" s
+                    Debug.log "NoOp" s
             in
             ( model, Cmd.none, Nothing )
 
@@ -172,16 +172,7 @@ update _ _ _ _ msg model =
             ( { model | polls = polls }, Cmd.none, Nothing )
 
         SubmitPoll pollId ->
-            Debug.todo "branch 'SubmitPoll _' not implemented"
-
-
-
--- SetMultiChoiceFieldAnswer ->
---     let
---         polls =
---             []
---     in
---     ( { model | polls = polls }, Cmd.none, Nothing )
+            ( model, Cmd.none, Nothing )
 
 
 withAnswerText : String -> Field -> Field
@@ -198,10 +189,6 @@ withAnswerText answerText field =
 
         MultiChoiceField ({ selectedChoices } as fieldParams) ->
             if List.member answerText selectedChoices then
-                let
-                    _ =
-                        Debug.log "ping pong" "wow"
-                in
                 MultiChoiceField { fieldParams | selectedChoices = List.filter (\x -> x /= answerText) selectedChoices }
 
             else
