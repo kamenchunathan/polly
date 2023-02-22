@@ -2,7 +2,7 @@ module Page.Index exposing (Data, Model, Msg, page)
 
 import Browser.Navigation
 import DataSource exposing (DataSource)
-import Graphql.Http exposing (queryRequest, send)
+import Graphql.Http exposing (mutationRequest, queryRequest, send)
 import Graphql.Operation exposing (RootQuery)
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import Head
@@ -16,11 +16,18 @@ import Page exposing (StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
 import Path
+import PollApi.InputObject exposing (buildAddPollCharFieldAnswerInput)
+import PollApi.Mutation exposing (addPollCharFieldAnswer)
+import PollApi.Object exposing (AddPollCharFieldAnswerPayload)
+import PollApi.Object.AddPollCharFieldAnswerPayload as AddPollCharFieldAnswerPayload
+import PollApi.Object.ErrorType as ErrorType
 import PollApi.Object.Poll as Poll
 import PollApi.Object.PollCharField as PollCharField
+import PollApi.Object.PollCharFieldAnswer as PollCharFieldAnswer
 import PollApi.Object.PollChoiceField as PollChoiceField
 import PollApi.Object.PollMultiChoiceField as PollMultiChoiceField
 import PollApi.Object.PollTextField as PollTextField
+import PollApi.Object.User as User
 import PollApi.Query exposing (polls)
 import PollApi.Scalar exposing (Id(..))
 import PollApi.Union.PollField exposing (Fragments, fragments)
@@ -29,8 +36,29 @@ import String exposing (fromInt)
 import View exposing (View)
 
 
-type alias Model =
-    { polls : List Poll
+type alias User =
+    { id : Id
+    , username : String
+    }
+
+
+type alias ApiError =
+    { field : String
+    , messages : List String
+    }
+
+
+type alias AnswerPayload =
+    { id : Id
+    , answer : String
+    , user : User
+    }
+
+
+type alias AddCharFieldAnswerPayload =
+    { mutationId : Maybe String
+    , answerPayload : Maybe AnswerPayload
+    , errors : List ApiError
     }
 
 
@@ -72,12 +100,18 @@ type alias Poll =
     }
 
 
+type alias Model =
+    { polls : List Poll
+    }
+
+
 type Msg
     = GetData
     | NoOpString String
     | GotPolls (List Poll)
     | SetFieldAnswer Id Id String
     | SubmitPoll Id
+    | GotAnswer (Maybe AddCharFieldAnswerPayload)
 
 
 type alias RouteParams =
@@ -172,7 +206,24 @@ update _ _ _ _ msg model =
             ( { model | polls = polls }, Cmd.none, Nothing )
 
         SubmitPoll _ ->
+            let
+                req =
+                    mutationRequest "http://localhost:8000/graphql/" answerMutation
+                        |> send payloadResultToMessage
+            in
+            ( model, req, Nothing )
+
+        GotAnswer a ->
+            let
+                _ =
+                    Debug.log "answer res" a
+            in
             ( model, Cmd.none, Nothing )
+
+
+payloadResultToMessage : Result (Graphql.Http.Error (Maybe AddCharFieldAnswerPayload)) (Maybe AddCharFieldAnswerPayload) -> Msg
+payloadResultToMessage =
+    GotAnswer << Result.withDefault Nothing
 
 
 withAnswerText : String -> Field -> Field
@@ -275,6 +326,57 @@ resultToMessage : Result (Graphql.Http.Error (List Poll)) (List Poll) -> Msg
 resultToMessage res =
     Result.withDefault [] res
         |> GotPolls
+
+
+charFieldAnswer : SelectionSet AnswerPayload PollApi.Object.PollCharFieldAnswer
+charFieldAnswer =
+    SelectionSet.map2 User User.id User.username
+        |> PollCharFieldAnswer.user
+        |> SelectionSet.map3 AnswerPayload
+            PollCharFieldAnswer.id
+            PollCharFieldAnswer.answer
+
+
+addPollCharFieldAnswerPayload : SelectionSet AddCharFieldAnswerPayload AddPollCharFieldAnswerPayload
+addPollCharFieldAnswerPayload =
+    SelectionSet.map3
+        AddCharFieldAnswerPayload
+        AddPollCharFieldAnswerPayload.clientMutationId
+        (AddPollCharFieldAnswerPayload.pollCharFieldAnswer charFieldAnswer)
+        (AddPollCharFieldAnswerPayload.errors (SelectionSet.map2 ApiError ErrorType.field ErrorType.messages))
+
+
+answerMutation : SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
+answerMutation =
+    addPollCharFieldAnswer
+        { input =
+            buildAddPollCharFieldAnswerInput
+                { answer = "I'm not really sure but I'm also not too smart"
+                , user = Id "3"
+                , field = Id "38"
+                }
+                identity
+        }
+        addPollCharFieldAnswerPayload
+
+
+answerMutation1 : SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
+answerMutation1 =
+    addPollCharFieldAnswer
+        { input =
+            buildAddPollCharFieldAnswerInput
+                { answer = "I'm not really sure but I'm also not too smart"
+                , user = Id "3"
+                , field = Id "38"
+                }
+                identity
+        }
+        addPollCharFieldAnswerPayload
+
+
+a : SelectionSet (List (Maybe AddCharFieldAnswerPayload)) Graphql.Operation.RootMutation
+a =
+    SelectionSet.map2 (\x y -> [ x, y ]) answerMutation answerMutation1
 
 
 subscriptions :
