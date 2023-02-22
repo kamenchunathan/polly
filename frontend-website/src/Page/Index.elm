@@ -344,14 +344,17 @@ view :
 view _ _ { polls } _ =
     { title = "Home | Polls"
     , body =
-        [ navbar
-        , header
-        , viewPolls polls
-        , if List.isEmpty polls then
-            getDataButton
+        [ H.div
+            [ HA.class "h-screen bg-neutral-50" ]
+            [ navbar
+            , header
+            , viewPolls polls
+            , if List.isEmpty polls then
+                getDataButton
 
-          else
-            H.div [] []
+              else
+                H.div [] []
+            ]
         ]
     }
 
@@ -366,13 +369,13 @@ viewPolls polls =
 viewPoll : Poll -> Html Msg
 viewPoll poll =
     H.div
-        [ HA.class "p-2 m-2" ]
+        [ HA.class "p-2 m-2 md:px-4" ]
         [ H.p [ HA.class "text-lg font-medium" ] [ H.text poll.title ]
-        , H.p [ HA.class "text-sm px-2 font-light" ] [ H.text poll.description ]
+        , H.p [ HA.class "text-sm px-2 md:px-4 text-neutral-700" ] [ H.text poll.description ]
 
         -- Question Container
         , H.form
-            [ HA.class "py-2 px-4" ]
+            [ HA.class "py-2 px-4 md:px-8" ]
             (List.indexedMap (viewPollField poll.id) poll.fields)
         , H.div [ HA.class "flex flex-row justify-end p-4" ] [ submitBtn poll.id ]
         ]
@@ -387,12 +390,16 @@ viewPollField pollId i field =
     case field of
         CharField { questionText, answer, id } ->
             H.div
-                [ HA.class "p-2" ]
-                [ H.label [ HA.class "pr-2" ] [ H.text (numbering ++ questionText) ]
+                [ HA.class "p-2 flex flex-row flex-wrap" ]
+                [ H.label [ HA.class "pr-2 flex-2" ] [ H.text (numbering ++ questionText) ]
                 , H.input
-                    [ HA.value (withDefault "" answer)
+                    [ HA.class <|
+                        "flex-1 p-1 px-4 max-h-14 rounded-sm border-2 border-neutral-300 focus:border-0 "
+                            ++ "bg-neutral-100 hover:bg-neutral-200 focus:bg-white focus:outline-neutral-500 "
+                            ++ "focus:outline-1"
+                    , HA.value (withDefault "" answer)
+                    , HA.placeholder "answer.."
                     , HE.onInput (SetFieldAnswer pollId (Id <| unwrapId id ++ "_c"))
-                    , HA.class "p-1 rounded-sm"
                     ]
                     []
                 ]
@@ -403,9 +410,13 @@ viewPollField pollId i field =
                 [ H.label [] [ H.text (numbering ++ questionText) ]
                 , H.div []
                     [ H.textarea
-                        [ HA.class "m-2 ml-8 w-4/6 p-2 rounded-sm"
+                        [ HA.class <|
+                            "box-border h-max min-h-fit w-11/12 p-2 m-2 ml-8 rounded-sm border-2 border-neutral-300 bg-neutral-100 "
+                                ++ "hover:bg-neutral-200 focus:bg-white h-fit focus:outline-neutral-500 focus:outline-1 "
+                                ++ "overflow-auto resize-none"
                         , HA.value (withDefault "" answer)
                         , HA.placeholder "Your text here"
+                        , HA.rows 14
                         , HE.onInput (SetFieldAnswer pollId (Id <| unwrapId id ++ "_t"))
                         ]
                         []
@@ -479,7 +490,7 @@ submitBtn pollId =
     H.div [ HA.class "text-center mx-2" ]
         [ H.button
             [ HE.onClick (SubmitPoll pollId)
-            , HA.class "bg-slate-500 p-2 rounded-md text-lg text-white m-2"
+            , HA.class "px-4 bg-slate-900 p-2 rounded-md text-lg text-white m-2"
             ]
             [ H.text "Submit Poll" ]
         ]
@@ -503,7 +514,7 @@ navbar =
             [ H.text "Blog" ]
         , H.a
             [ HA.href "/login"
-            , HA.class "bg-black text-white py-2 px-4 rounded-md hover:font-semibold"
+            , HA.class "bg-slate-900 text-white py-2 px-4 rounded-md hover:font-semibold"
             ]
             [ H.text "Login" ]
         ]
@@ -512,8 +523,8 @@ navbar =
 header : Html Msg
 header =
     H.div
-        [ HA.class "h-full w-full sm:w-5/6 lg:w-4/6 mx-auto p-4" ]
-        [ H.text "Polls You've created" ]
+        [ HA.class "w-full sm:w-5/6 lg:w-4/6 mx-auto p-4 text-lg" ]
+        [ H.text "Pulic Polls: " ]
 
 
 getDataButton : Html Msg
@@ -521,7 +532,7 @@ getDataButton =
     H.div [ HA.class "text-center" ]
         [ H.button
             [ HE.onClick GetData
-            , HA.class "bg-slate-500 p-2  rounded-md text-lg text-white m-2"
+            , HA.class "bg-slate-800 py-2 px-4 rounded-md text-lg text-white m-2"
             ]
             [ H.text "All Public Polls" ]
         ]
