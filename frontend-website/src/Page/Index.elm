@@ -360,23 +360,38 @@ answerMutation =
         addPollCharFieldAnswerPayload
 
 
-answerMutation1 : SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
-answerMutation1 =
+choiceFieldAnswerMutation :
+    PollApi.InputObject.AddPollCharFieldAnswerInputRequiredFields
+    -> SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
+choiceFieldAnswerMutation requiredCharfields =
     addPollCharFieldAnswer
-        { input =
-            buildAddPollCharFieldAnswerInput
-                { answer = "I'm not really sure but I'm also not too smart"
-                , user = Id "3"
-                , field = Id "38"
-                }
-                identity
-        }
+        { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
         addPollCharFieldAnswerPayload
 
 
-a : SelectionSet (List (Maybe AddCharFieldAnswerPayload)) Graphql.Operation.RootMutation
-a =
-    SelectionSet.map2 (\x y -> [ x, y ]) answerMutation answerMutation1
+textFieldAnswerMutation requiredCharfields =
+    addPollCharFieldAnswer
+        { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
+        addPollCharFieldAnswerPayload
+
+
+multiChoiceFieldAnswerMutation requiredCharfields =
+    addPollCharFieldAnswer
+        { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
+        addPollCharFieldAnswerPayload
+
+
+charFieldAnswerMutation requiredCharfields =
+    addPollCharFieldAnswer
+        { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
+        addPollCharFieldAnswerPayload
+
+
+
+-- a : SelectionSet (List (Maybe AddCharFieldAnswerPayload)) Graphql.Operation.RootMutation
+-- a =
+--     SelectionSet.map2 (\x y -> [ x, y ]) answerMutation answerMutation1
+--
 
 
 subscriptions :
@@ -497,7 +512,7 @@ viewPollField pollId i field =
                         [ HA.class <|
                             "box-border h-max min-h-fit w-11/12 p-2 m-2 ml-8 rounded-sm border-2 border-neutral-300 bg-neutral-50 "
                                 ++ "hover:bg-neutral-200 focus:bg-white h-fit focus:outline-neutral-300 focus:outline-1 "
-                                ++ "overflow-auto resize-none"
+                                ++ "overflow-auto resize-none scroll-py-2"
                         , HA.value (withDefault "" answer)
                         , HA.placeholder "Your text here"
                         , HA.rows 14
