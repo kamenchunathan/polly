@@ -1,6 +1,6 @@
 node_modules/
 elm-stuff/
 dist/
-.elm-pages/
+.elm-spa/
 functions/render/elm-pages-cli.js
 public/style.css
