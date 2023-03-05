@@ -1,4 +1,9 @@
-module PollSelectionSets exposing (..)
+module PollSelectionSets exposing
+    ( AddCharFieldAnswerPayload
+    , allPolls
+    , answerMutation
+    , specificPoll
+    )
 
 import Data.Poll exposing (Field(..), Poll)
 import Data.User exposing (User)
@@ -16,7 +21,7 @@ import PollApi.Object.PollChoiceField as PollChoiceField
 import PollApi.Object.PollMultiChoiceField as PollMultiChoiceField
 import PollApi.Object.PollTextField as PollTextField
 import PollApi.Object.User as User
-import PollApi.Query exposing (polls)
+import PollApi.Query exposing (poll, polls)
 import PollApi.Scalar exposing (Id(..))
 import PollApi.Union.PollField exposing (Fragments, fragments)
 
@@ -41,15 +46,29 @@ type alias AddCharFieldAnswerPayload =
     }
 
 
+
+------------------------------------------------------------------------------------------------------------
+----------------------------------------------- Queries ----------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+
 allPolls : SelectionSet (List Poll) RootQuery
 allPolls =
-    let
-        makePoll (Id pollId) =
-            Poll pollId
-    in
     Poll.pollFields (fragments charFieldFragments)
         |> SelectionSet.map4 makePoll Poll.id Poll.title Poll.description
         |> polls
+
+
+specificPoll : Id -> SelectionSet (Maybe Poll) RootQuery
+specificPoll pollId =
+    Poll.pollFields (fragments charFieldFragments)
+        |> SelectionSet.map4 makePoll Poll.id Poll.title Poll.description
+        |> poll { pollId = pollId }
+
+
+makePoll : Id -> String -> String -> List Field -> Poll
+makePoll (Id pollId) =
+    Poll pollId
 
 
 charFieldFragments : Fragments Field
@@ -121,6 +140,12 @@ charFieldAnswer =
             PollCharFieldAnswer.answer
 
 
+
+------------------------------------------------------------------------------------------------------------
+--------------------------------------------- MUTATIONS ----------------------------------------------------
+------------------------------------------------------------------------------------------------------------
+
+
 addPollCharFieldAnswerPayload : SelectionSet AddCharFieldAnswerPayload AddPollCharFieldAnswerPayload
 addPollCharFieldAnswerPayload =
     SelectionSet.map3
@@ -132,6 +157,7 @@ addPollCharFieldAnswerPayload =
 
 answerMutation : SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
 answerMutation =
+    --TODO(nathan): take arguments to make an actual mutation
     addPollCharFieldAnswer
         { input =
             buildAddPollCharFieldAnswerInput

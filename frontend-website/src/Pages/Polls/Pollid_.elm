@@ -3,13 +3,15 @@ module Pages.Polls.Pollid_ exposing (Model, Msg, page)
 import Components.Navbar exposing (navbar)
 import Data.Poll exposing (Field(..), Poll)
 import Gen.Params.Polls.Pollid_ exposing (Params)
+import Gen.Route as Route exposing (Route(..))
 import Graphql.Http exposing (HttpError(..), RawError(..), mutationRequest, queryRequest, send)
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Maybe exposing (withDefault)
 import Page
-import PollSelectionSets exposing (AddCharFieldAnswerPayload, allPolls, answerMutation)
+import PollApi.Scalar exposing (Id(..))
+import PollSelectionSets exposing (AddCharFieldAnswerPayload, answerMutation, specificPoll)
 import RemoteData exposing (RemoteData(..))
 import Request
 import Shared
@@ -31,22 +33,32 @@ page _ req_params =
 -- INIT
 
 
+type RequestError
+    = PollNotFound
+    | Other String
+
+
 type alias Model =
-    RemoteData String (List Poll)
+    { requestedPollId : String
+    , poll : RemoteData RequestError Poll
+    , req : Request.With Params
+    }
 
 
 init : Request.With Params -> ( Model, Cmd Msg )
-init { params } =
+init ({ params } as req) =
     let
-        _ =
-            Debug.log "" params.pollid
-
-        req =
-            allPolls
+        query_request =
+            specificPoll (Id params.pollid)
                 |> queryRequest "http://localhost:8000/graphql/"
-                |> send resultToMessage
+                |> send (resultToMessage GotPoll)
     in
-    ( NotAsked, req )
+    ( { requestedPollId = params.pollid
+      , poll = NotAsked
+      , req = req
+      }
+    , query_request
+    )
 
 
 
@@ -54,32 +66,57 @@ init { params } =
 
 
 type Msg
-    = GetData String
-    | GotPolls (RemoteData (Graphql.Http.Error (List Poll)) (List Poll))
+    = GetData
+    | GotPoll (RemoteData (Graphql.Http.Error (Maybe Poll)) (Maybe Poll))
     | SetFieldAnswer String String String
-    | SubmitPoll String
+    | SubmitPoll
+      -- TODO(nathan): Rename this to something more descriptive
     | GotAnswer (Maybe AddCharFieldAnswerPayload)
+
+
+propagateError : RemoteData RequestError (Maybe a) -> RemoteData RequestError a
+propagateError res =
+    case res of
+        NotAsked ->
+            NotAsked
+
+        Loading ->
+            Loading
+
+        Failure e ->
+            Failure e
+
+        Success (Just val) ->
+            Success val
+
+        Success Nothing ->
+            Failure PollNotFound
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case ( msg, model ) of
-        ( GetData _, _ ) ->
+    case msg of
+        GetData ->
             let
                 req =
-                    allPolls
+                    specificPoll (Id model.requestedPollId)
                         |> queryRequest "http://localhost:8000/graphql/"
-                        |> send resultToMessage
+                        |> send (resultToMessage GotPoll)
             in
             ( model, req )
 
-        ( GotPolls webResult, _ ) ->
-            ( RemoteData.mapError errorToString webResult, Cmd.none )
-
-        ( SetFieldAnswer pollId fieldId val, Success polls ) ->
+        GotPoll webResult ->
             let
-                newPolls =
-                    List.map
+                poll =
+                    RemoteData.mapError errorToString webResult
+                        |> propagateError
+            in
+            ( { model | poll = poll }, Cmd.none )
+
+        SetFieldAnswer pollId fieldId val ->
+            let
+                newPoll =
+                    RemoteData.map
                         (\poll ->
                             if poll.id == pollId then
                                 { poll
@@ -98,14 +135,13 @@ update msg model =
                             else
                                 poll
                         )
-                        polls
+                        model.poll
             in
-            ( Success newPolls, Cmd.none )
+            ( { model | poll = newPoll }
+            , Cmd.none
+            )
 
-        ( SetFieldAnswer _ _ _, _ ) ->
-            ( model, Cmd.none )
-
-        ( SubmitPoll _, _ ) ->
+        SubmitPoll ->
             let
                 req =
                     mutationRequest "http://localhost:8000/graphql/" answerMutation
@@ -113,7 +149,7 @@ update msg model =
             in
             ( model, req )
 
-        ( GotAnswer _, _ ) ->
+        GotAnswer _ ->
             -- let
             --     _ =
             --         Debug.log "answer res" a
@@ -121,34 +157,34 @@ update msg model =
             ( model, Cmd.none )
 
 
-resultToMessage : Result (Graphql.Http.Error (List Poll)) (List Poll) -> Msg
-resultToMessage res =
+resultToMessage : (RemoteData e a -> Msg) -> Result e a -> Msg
+resultToMessage msg res =
     RemoteData.fromResult res
-        |> GotPolls
+        |> msg
 
 
-errorToString : Graphql.Http.Error (List Poll) -> String
+errorToString : Graphql.Http.Error a -> RequestError
 errorToString err =
     case err of
         GraphqlError _ _ ->
-            "grqphql Error"
+            Other "grqphql Error"
 
         HttpError httpError ->
             case httpError of
                 Timeout ->
-                    "Timeout"
+                    Other "Timeout"
 
                 NetworkError ->
-                    "NetworkError"
+                    Other "NetworkError"
 
                 BadStatus _ _ ->
-                    "BadStatus"
+                    Other "BadStatus"
 
                 BadPayload _ ->
-                    "BadPayload"
+                    Other "BadPayload"
 
                 BadUrl _ ->
-                    "BadUrl"
+                    Other "BadUrl"
 
 
 payloadResultToMessage : Result (Graphql.Http.Error (Maybe AddCharFieldAnswerPayload)) (Maybe AddCharFieldAnswerPayload) -> Msg
@@ -222,14 +258,14 @@ view model =
 
 content : Model -> Html Msg
 content model =
-    case model of
+    case model.poll of
         NotAsked ->
             H.div [] []
 
         Loading ->
             H.div [] [ H.text "Loading" ]
 
-        Failure failuremessage ->
+        Failure (Other failuremessage) ->
             H.div
                 [ HA.class "p-4 w-4/6 mx-auto" ]
                 [ H.div [ HA.class "py-8 text-red-500" ]
@@ -238,32 +274,50 @@ content model =
                     ]
 
                 --TODO(nathan): edit button to only get data from the poll in the url
-                , refreshDataButton ""
+                , refreshDataButton
                 ]
 
-        Success polls ->
-            viewPolls polls
+        Failure PollNotFound ->
+            viewPollNotFound
+
+        Success poll ->
+            viewPoll poll
 
 
-viewPolls : List Poll -> Html Msg
-viewPolls polls =
+viewPollNotFound : Html msg
+viewPollNotFound =
     H.div
         [ HA.class "p-4 w-4/6 mx-auto" ]
-        (List.map viewPoll polls)
+        [ H.div [ HA.class "py-8 text-red-500" ]
+            [ H.p []
+                [ H.text <|
+                    "This poll does not exist. You may have gotten an incorrect url or"
+                        ++ " it may have been deleted by the owner"
+                ]
+            ]
+        , H.a
+            [ HA.class "underline font-semibold text-xl"
+            , HA.href (Route.toHref Route.Home_)
+            ]
+            [ H.text "Take me back home"
+            ]
+        ]
 
 
 viewPoll : Poll -> Html Msg
 viewPoll poll =
-    H.div
-        [ HA.class "p-2 m-2 md:px-4" ]
-        [ H.p [ HA.class "text-lg font-medium" ] [ H.text poll.title ]
-        , H.p [ HA.class "text-sm px-2 md:px-4 text-neutral-700" ] [ H.text poll.description ]
+    H.div [ HA.class " w-4/6 mx-auto" ]
+        [ H.div
+            [ HA.class "p-2 m-2 md:px-4" ]
+            [ H.p [ HA.class "text-lg font-medium" ] [ H.text poll.title ]
+            , H.p [ HA.class "text-sm px-2 md:px-4 text-neutral-700" ] [ H.text poll.description ]
 
-        -- Question Container
-        , H.form
-            [ HA.class "py-2 px-4 md:px-8" ]
-            (List.indexedMap (viewPollField poll.id) poll.fields)
-        , H.div [ HA.class "flex flex-row justify-end p-4" ] [ submitBtn poll.id ]
+            -- Question Container
+            , H.form
+                [ HA.class "py-2 px-4 md:px-8" ]
+                (List.indexedMap (viewPollField poll.id) poll.fields)
+            , H.div [ HA.class "flex flex-row justify-end p-4" ] [ submitBtn poll.id ]
+            ]
         ]
 
 
@@ -367,21 +421,21 @@ viewPollField pollId i field =
 
 
 submitBtn : String -> Html Msg
-submitBtn pollId =
+submitBtn _ =
     H.div [ HA.class "text-center mx-2" ]
         [ H.button
-            [ HE.onClick (SubmitPoll pollId)
+            [ HE.onClick SubmitPoll
             , HA.class "px-4 bg-slate-900 p-2 rounded-md text-lg text-white m-2"
             ]
             [ H.text "Submit Poll" ]
         ]
 
 
-refreshDataButton : String -> Html Msg
-refreshDataButton id =
+refreshDataButton : Html Msg
+refreshDataButton =
     H.div [ HA.class "text-center" ]
         [ H.button
-            [ HE.onClick <| GetData id
+            [ HE.onClick GetData
             , HA.class "bg-slate-800 py-2 px-4 rounded-md text-lg text-white m-2"
             ]
             [ H.text "Refresh Poll Data" ]
