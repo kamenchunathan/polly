@@ -24,6 +24,7 @@ import PollApi.Object.User as User
 import PollApi.Query exposing (polls)
 import PollApi.Scalar exposing (Id(..))
 import PollApi.Union.PollField exposing (Fragments, fragments)
+import RemoteData exposing (RemoteData(..))
 import Request
 import Shared
 import String exposing (fromInt)
@@ -31,9 +32,9 @@ import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page _ _ =
+page _ req_params =
     Page.element
-        { init = init
+        { init = init req_params
         , update = update
         , view = view
         , subscriptions = subscriptions
@@ -109,13 +110,21 @@ type alias Poll =
 
 
 type alias Model =
-    { polls : List Poll
-    }
+    RemoteData String (List Poll)
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( { polls = [] }, Cmd.none )
+init : Request.With Params -> ( Model, Cmd Msg )
+init { params } =
+    let
+        _ =
+            Debug.log "" params.pollid
+
+        req =
+            allPollsSelectionSet
+                |> queryRequest "http://localhost:8000/graphql/"
+                |> send resultToMessage
+    in
+    ( NotAsked, req )
 
 
 
@@ -133,29 +142,30 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        GetData ->
+    case ( msg, model ) of
+        ( GetData, _ ) ->
             let
                 req =
-                    pollSelectionSet
+                    allPollsSelectionSet
                         |> queryRequest "http://localhost:8000/graphql/"
                         |> send resultToMessage
             in
             ( model, req )
 
-        NoOpString s ->
-            let
-                _ =
-                    Debug.log "NoOp" s
-            in
+        -- TODO: remove debug on prod build
+        ( NoOpString s, _ ) ->
+            -- let
+            --     _ =
+            --         Debug.log "NoOp" s
+            -- in
             ( model, Cmd.none )
 
-        GotPolls polls ->
-            ( { model | polls = polls }, Cmd.none )
+        ( GotPolls polls, _ ) ->
+            ( Success polls, Cmd.none )
 
-        SetFieldAnswer pollId fieldId val ->
+        ( SetFieldAnswer pollId fieldId val, Success polls ) ->
             let
-                polls =
+                newPolls =
                     List.map
                         (\poll ->
                             if poll.id == pollId then
@@ -175,11 +185,14 @@ update msg model =
                             else
                                 poll
                         )
-                        model.polls
+                        polls
             in
-            ( { model | polls = polls }, Cmd.none )
+            ( Success newPolls, Cmd.none )
 
-        SubmitPoll _ ->
+        ( SetFieldAnswer _ _ _, _ ) ->
+            ( model, Cmd.none )
+
+        ( SubmitPoll _, _ ) ->
             let
                 req =
                     mutationRequest "http://localhost:8000/graphql/" answerMutation
@@ -187,11 +200,11 @@ update msg model =
             in
             ( model, req )
 
-        GotAnswer a ->
-            let
-                _ =
-                    Debug.log "answer res" a
-            in
+        ( GotAnswer a, _ ) ->
+            -- let
+            --     _ =
+            --         Debug.log "answer res" a
+            -- in
             ( model, Cmd.none )
 
 
@@ -241,8 +254,8 @@ unwrapId (Id inner) =
     inner
 
 
-pollSelectionSet : SelectionSet (List Poll) RootQuery
-pollSelectionSet =
+allPollsSelectionSet : SelectionSet (List Poll) RootQuery
+allPollsSelectionSet =
     Poll.pollFields (fragments charFieldFragments)
         |> SelectionSet.map4 Poll Poll.id Poll.title Poll.description
         |> polls
@@ -383,22 +396,42 @@ subscriptions _ =
 
 
 view : Model -> View Msg
-view { polls } =
+view model =
     { title = "Home | Polls"
     , body =
         [ H.div
             [ HA.class "min-h-screen h-full bg-neutral-100" ]
             [ navbar
             , header
-            , viewPolls polls
-            , if List.isEmpty polls then
-                getDataButton
-
-              else
-                H.div [] []
+            , content model
             ]
         ]
     }
+
+
+content : Model -> Html Msg
+content model =
+    case model of
+        NotAsked ->
+            H.div
+                [ HA.class "p-4 w-4/6 mx-auto" ]
+                [ H.div [ HA.class "py-8" ]
+                    [ H.p [] [ H.text "Something appears to have gone wrong." ]
+                    , H.p [] [ H.text "Click the button to refresh the poll" ]
+                    ]
+
+                --TODO(nathan): edit button to only get data from the poll in the url
+                , refreshDataButton
+                ]
+
+        Loading ->
+            H.div [] [ H.text "Loading" ]
+
+        Failure failuremessage ->
+            H.div [] [ H.text failuremessage ]
+
+        Success polls ->
+            viewPolls polls
 
 
 viewPolls : List Poll -> Html Msg
@@ -564,12 +597,12 @@ header =
         [ H.text "Pulic Polls: " ]
 
 
-getDataButton : Html Msg
-getDataButton =
+refreshDataButton : Html Msg
+refreshDataButton =
     H.div [ HA.class "text-center" ]
         [ H.button
             [ HE.onClick GetData
             , HA.class "bg-slate-800 py-2 px-4 rounded-md text-lg text-white m-2"
             ]
-            [ H.text "All Public Polls" ]
+            [ H.text "Refresh Poll Data" ]
         ]
