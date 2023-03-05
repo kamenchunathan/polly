@@ -11,8 +11,11 @@
      - [x] Extract selectionSets into a local module
      - [x] create SelectionSets to get specific polls based on id
   - [ ] Do authentication and detect if a poll has already been answered by a user
+  - [ ] Poll Submission
   - [ ] Integrate returned errors in poll fields i.e. validation
   - [ ] Home Page / Landing page Options
     - [x] Marketing stuff 
   - [ ] Create Poll
-
+  - [ ] PollDashboard: 
+    - [ ] Aggregate and display Poll results as graphs etc. in a poll dashboard
+    - [ ] Creator of poll to manage the poll: Editing, deleting
