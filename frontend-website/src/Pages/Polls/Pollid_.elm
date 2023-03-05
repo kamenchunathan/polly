@@ -1,30 +1,15 @@
 module Pages.Polls.Pollid_ exposing (Model, Msg, page)
 
 import Components.Navbar exposing (navbar)
+import Data.Poll exposing (Field(..), Poll)
 import Gen.Params.Polls.Pollid_ exposing (Params)
 import Graphql.Http exposing (HttpError(..), RawError(..), mutationRequest, queryRequest, send)
-import Graphql.Operation exposing (RootQuery)
-import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Maybe exposing (withDefault)
 import Page
-import PollApi.InputObject exposing (buildAddPollCharFieldAnswerInput)
-import PollApi.Mutation exposing (addPollCharFieldAnswer)
-import PollApi.Object exposing (AddPollCharFieldAnswerPayload)
-import PollApi.Object.AddPollCharFieldAnswerPayload as AddPollCharFieldAnswerPayload
-import PollApi.Object.ErrorType as ErrorType
-import PollApi.Object.Poll as Poll
-import PollApi.Object.PollCharField as PollCharField
-import PollApi.Object.PollCharFieldAnswer as PollCharFieldAnswer
-import PollApi.Object.PollChoiceField as PollChoiceField
-import PollApi.Object.PollMultiChoiceField as PollMultiChoiceField
-import PollApi.Object.PollTextField as PollTextField
-import PollApi.Object.User as User
-import PollApi.Query exposing (polls)
-import PollApi.Scalar exposing (Id(..))
-import PollApi.Union.PollField exposing (Fragments, fragments)
+import PollSelectionSets exposing (AddCharFieldAnswerPayload, allPolls, answerMutation)
 import RemoteData exposing (RemoteData(..))
 import Request
 import Shared
@@ -46,70 +31,6 @@ page _ req_params =
 -- INIT
 
 
-type alias User =
-    { id : Id
-    , username : String
-    }
-
-
-type alias ApiError =
-    { field : String
-    , messages : List String
-    }
-
-
-type alias AnswerPayload =
-    { id : Id
-    , answer : String
-    , user : User
-    }
-
-
-type alias AddCharFieldAnswerPayload =
-    { mutationId : Maybe String
-    , answerPayload : Maybe AnswerPayload
-    , errors : List ApiError
-    }
-
-
-type
-    Field
-    -- short text input (<100 characters)
-    = CharField
-        { id : Id
-        , questionText : String
-        , answer : Maybe String
-        }
-      -- long text input
-    | TextField
-        { id : Id
-        , questionText : String
-        , answer : Maybe String
-        }
-      -- choice between a list of options
-    | ChoiceField
-        { id : Id
-        , questionText : String
-        , choices : List String
-        , selectedChoice : Maybe String
-        }
-      -- list of selected choices from a set of options
-    | MultiChoiceField
-        { id : Id
-        , questionText : String
-        , choices : List String
-        , selectedChoices : List String
-        }
-
-
-type alias Poll =
-    { id : Id
-    , title : String
-    , description : String
-    , fields : List Field
-    }
-
-
 type alias Model =
     RemoteData String (List Poll)
 
@@ -121,7 +42,7 @@ init { params } =
             Debug.log "" params.pollid
 
         req =
-            allPollsSelectionSet
+            allPolls
                 |> queryRequest "http://localhost:8000/graphql/"
                 |> send resultToMessage
     in
@@ -133,33 +54,24 @@ init { params } =
 
 
 type Msg
-    = GetData
-    | NoOpString String
+    = GetData String
     | GotPolls (RemoteData (Graphql.Http.Error (List Poll)) (List Poll))
-    | SetFieldAnswer Id Id String
-    | SubmitPoll Id
+    | SetFieldAnswer String String String
+    | SubmitPoll String
     | GotAnswer (Maybe AddCharFieldAnswerPayload)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model ) of
-        ( GetData, _ ) ->
+        ( GetData _, _ ) ->
             let
                 req =
-                    allPollsSelectionSet
+                    allPolls
                         |> queryRequest "http://localhost:8000/graphql/"
                         |> send resultToMessage
             in
             ( model, req )
-
-        -- TODO: remove debug on prod build
-        ( NoOpString s, _ ) ->
-            -- let
-            --     _ =
-            --         Debug.log "NoOp" s
-            -- in
-            ( model, Cmd.none )
 
         ( GotPolls webResult, _ ) ->
             ( RemoteData.mapError errorToString webResult, Cmd.none )
@@ -201,12 +113,18 @@ update msg model =
             in
             ( model, req )
 
-        ( GotAnswer a, _ ) ->
+        ( GotAnswer _, _ ) ->
             -- let
             --     _ =
             --         Debug.log "answer res" a
             -- in
             ( model, Cmd.none )
+
+
+resultToMessage : Result (Graphql.Http.Error (List Poll)) (List Poll) -> Msg
+resultToMessage res =
+    RemoteData.fromResult res
+        |> GotPolls
 
 
 errorToString : Graphql.Http.Error (List Poll) -> String
@@ -258,156 +176,23 @@ withAnswerText answerText field =
                 MultiChoiceField { fieldParams | selectedChoices = answerText :: selectedChoices }
 
 
-fieldIdMatches : Id -> Field -> Bool
+fieldIdMatches : String -> Field -> Bool
 fieldIdMatches fieldId field =
     case field of
         CharField { id } ->
-            fieldId == (Id <| unwrapId id ++ "_c")
+            fieldId == (id ++ "_c")
 
         TextField { id } ->
-            fieldId == (Id <| unwrapId id ++ "_t")
+            fieldId == (id ++ "_t")
 
         ChoiceField { id } ->
-            fieldId == (Id <| unwrapId id ++ "_ch")
+            fieldId == (id ++ "_ch")
 
         MultiChoiceField { id } ->
-            fieldId == (Id <| unwrapId id ++ "_m")
-
-
-unwrapId : Id -> String
-unwrapId (Id inner) =
-    inner
-
-
-allPollsSelectionSet : SelectionSet (List Poll) RootQuery
-allPollsSelectionSet =
-    Poll.pollFields (fragments charFieldFragments)
-        |> SelectionSet.map4 Poll Poll.id Poll.title Poll.description
-        |> polls
-
-
-charFieldFragments : Fragments Field
-charFieldFragments =
-    { onPollCharField =
-        SelectionSet.map2
-            (\id text ->
-                CharField
-                    { id = id
-                    , questionText = text
-                    , answer = Nothing
-                    }
-            )
-            PollCharField.id
-            PollCharField.text
-    , onPollTextField =
-        SelectionSet.map2
-            (\id text ->
-                TextField
-                    { id = id
-                    , questionText = text
-                    , answer = Nothing
-                    }
-            )
-            PollTextField.id
-            PollTextField.text
-    , onPollChoiceField =
-        SelectionSet.map3
-            (\id text choices ->
-                ChoiceField
-                    { id = id
-                    , questionText = text
-                    , choices = choices
-                    , selectedChoice = Nothing
-                    }
-            )
-            PollChoiceField.id
-            PollChoiceField.text
-            PollChoiceField.choices
-    , onPollMultiChoiceField =
-        SelectionSet.map3
-            (\id text choices ->
-                MultiChoiceField
-                    { id = id
-                    , questionText = text
-                    , choices = choices
-                    , selectedChoices = []
-                    }
-            )
-            PollMultiChoiceField.id
-            PollMultiChoiceField.text
-            PollMultiChoiceField.choices
-    }
-
-
-resultToMessage : Result (Graphql.Http.Error (List Poll)) (List Poll) -> Msg
-resultToMessage res =
-    RemoteData.fromResult res
-        |> GotPolls
-
-
-charFieldAnswer : SelectionSet AnswerPayload PollApi.Object.PollCharFieldAnswer
-charFieldAnswer =
-    SelectionSet.map2 User User.id User.username
-        |> PollCharFieldAnswer.user
-        |> SelectionSet.map3 AnswerPayload
-            PollCharFieldAnswer.id
-            PollCharFieldAnswer.answer
-
-
-addPollCharFieldAnswerPayload : SelectionSet AddCharFieldAnswerPayload AddPollCharFieldAnswerPayload
-addPollCharFieldAnswerPayload =
-    SelectionSet.map3
-        AddCharFieldAnswerPayload
-        AddPollCharFieldAnswerPayload.clientMutationId
-        (AddPollCharFieldAnswerPayload.pollCharFieldAnswer charFieldAnswer)
-        (AddPollCharFieldAnswerPayload.errors (SelectionSet.map2 ApiError ErrorType.field ErrorType.messages))
-
-
-answerMutation : SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
-answerMutation =
-    addPollCharFieldAnswer
-        { input =
-            buildAddPollCharFieldAnswerInput
-                { answer = "I'm not really sure but I'm also not too smart"
-                , user = Id "3"
-                , field = Id "38"
-                }
-                identity
-        }
-        addPollCharFieldAnswerPayload
+            fieldId == (id ++ "_m")
 
 
 
--- choiceFieldAnswerMutation :
---     PollApi.InputObject.AddPollCharFieldAnswerInputRequiredFields
---     -> SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
--- choiceFieldAnswerMutation requiredCharfields =
---     addPollCharFieldAnswer
---         { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
---         addPollCharFieldAnswerPayload
---
---
--- textFieldAnswerMutation : PollApi.InputObject.AddPollCharFieldAnswerInputRequiredFields -> SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
--- textFieldAnswerMutation requiredCharfields =
---     addPollCharFieldAnswer
---         { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
---         addPollCharFieldAnswerPayload
---
---
--- multiChoiceFieldAnswerMutation : PollApi.InputObject.AddPollCharFieldAnswerInputRequiredFields -> SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
--- multiChoiceFieldAnswerMutation requiredCharfields =
---     addPollCharFieldAnswer
---         { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
---         addPollCharFieldAnswerPayload
---
---
--- charFieldAnswerMutation : PollApi.InputObject.AddPollCharFieldAnswerInputRequiredFields -> SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
--- charFieldAnswerMutation requiredCharfields =
---     addPollCharFieldAnswer
---         { input = buildAddPollCharFieldAnswerInput requiredCharfields identity }
---         addPollCharFieldAnswerPayload
---
---
 -- SUBSCRIPTIONS
 
 
@@ -453,7 +238,7 @@ content model =
                     ]
 
                 --TODO(nathan): edit button to only get data from the poll in the url
-                , refreshDataButton
+                , refreshDataButton ""
                 ]
 
         Success polls ->
@@ -482,7 +267,7 @@ viewPoll poll =
         ]
 
 
-viewPollField : Id -> Int -> Field -> Html Msg
+viewPollField : String -> Int -> Field -> Html Msg
 viewPollField pollId i field =
     let
         numbering =
@@ -500,7 +285,7 @@ viewPollField pollId i field =
                             ++ "focus:outline-1"
                     , HA.value (withDefault "" answer)
                     , HA.placeholder "answer.."
-                    , HE.onInput (SetFieldAnswer pollId (Id <| unwrapId id ++ "_c"))
+                    , HE.onInput (SetFieldAnswer pollId (id ++ "_c"))
                     ]
                     []
                 ]
@@ -518,7 +303,7 @@ viewPollField pollId i field =
                         , HA.value (withDefault "" answer)
                         , HA.placeholder "Your text here"
                         , HA.rows 14
-                        , HE.onInput (SetFieldAnswer pollId (Id <| unwrapId id ++ "_t"))
+                        , HE.onInput (SetFieldAnswer pollId (id ++ "_t"))
                         ]
                         []
                     ]
@@ -535,14 +320,14 @@ viewPollField pollId i field =
                                 []
                                 [ H.input
                                     [ HA.type_ "radio"
-                                    , HA.id <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_ch"
-                                    , HA.name <| "poll" ++ unwrapId pollId ++ unwrapId id
+                                    , HA.id <| pollId ++ id ++ fromInt j ++ "_ch"
+                                    , HA.name <| "poll" ++ pollId ++ id
                                     , HA.value choice
-                                    , HE.onInput <| SetFieldAnswer pollId (Id <| unwrapId id ++ "_ch")
+                                    , HE.onInput <| SetFieldAnswer pollId (id ++ "_ch")
                                     ]
                                     []
                                 , H.label
-                                    [ HA.for <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_ch"
+                                    [ HA.for <| pollId ++ id ++ fromInt j ++ "_ch"
                                     , HA.class "px-2"
                                     ]
                                     [ H.text choice ]
@@ -563,14 +348,14 @@ viewPollField pollId i field =
                                 []
                                 [ H.input
                                     [ HA.type_ "checkbox"
-                                    , HA.id <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_m"
-                                    , HA.name <| "poll" ++ unwrapId pollId ++ unwrapId id
+                                    , HA.id <| pollId ++ id ++ fromInt j ++ "_m"
+                                    , HA.name <| "poll" ++ pollId ++ id
                                     , HA.value choice
-                                    , HE.onInput <| SetFieldAnswer pollId (Id <| unwrapId id ++ "_m")
+                                    , HE.onInput <| SetFieldAnswer pollId (id ++ "_m")
                                     ]
                                     []
                                 , H.label
-                                    [ HA.for <| unwrapId pollId ++ unwrapId id ++ fromInt j ++ "_m"
+                                    [ HA.for <| pollId ++ id ++ fromInt j ++ "_m"
                                     , HA.class "px-2"
                                     ]
                                     [ H.text choice ]
@@ -581,7 +366,7 @@ viewPollField pollId i field =
                 ]
 
 
-submitBtn : Id -> Html Msg
+submitBtn : String -> Html Msg
 submitBtn pollId =
     H.div [ HA.class "text-center mx-2" ]
         [ H.button
@@ -592,18 +377,11 @@ submitBtn pollId =
         ]
 
 
-header : Html Msg
-header =
-    H.div
-        [ HA.class "w-full sm:w-5/6 lg:w-4/6 mx-auto p-4 text-lg" ]
-        [ H.text "Pulic Polls: " ]
-
-
-refreshDataButton : Html Msg
-refreshDataButton =
+refreshDataButton : String -> Html Msg
+refreshDataButton id =
     H.div [ HA.class "text-center" ]
         [ H.button
-            [ HE.onClick GetData
+            [ HE.onClick <| GetData id
             , HA.class "bg-slate-800 py-2 px-4 rounded-md text-lg text-white m-2"
             ]
             [ H.text "Refresh Poll Data" ]
