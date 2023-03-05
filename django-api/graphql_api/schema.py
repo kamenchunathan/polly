@@ -110,12 +110,23 @@ class Poll(DjangoObjectType):
 class RootQuery(graphene.ObjectType):
     hello = graphene.String(required=True)
     polls = graphene.NonNull(graphene.List(graphene.NonNull(Poll)))
+    poll = graphene.Field(
+        Poll,
+        pollId=graphene.ID(required=True)
+    )
 
     def resolve_hello(root, info, **kwargs):
         return 'Hujambo mkuu'
 
     def resolve_polls(root, info, **kwargs):
         return PollModel.objects.all()
+
+    def resolve_poll(root, info, pollId):
+        res = PollModel.objects.filter(id=pollId)
+        if len(res) > 0:
+            return res[0]
+
+        return
 
 # ----------------------------------------------------------------------------
 # -------------------------------- MUTATIONS  -------------------------------
