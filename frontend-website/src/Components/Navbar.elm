@@ -12,7 +12,7 @@ navbar =
             [ HA.class "font-semibold text-2xl hover:underline hover:font-bold decoration-solid"
             , HA.href "/"
             ]
-            [ H.text "Polls" ]
+            [ H.text "Polly" ]
         , H.div [] []
         , H.div [] []
         , H.a
