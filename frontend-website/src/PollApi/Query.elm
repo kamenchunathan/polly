@@ -29,3 +29,15 @@ polls :
     -> SelectionSet (List decodesTo) RootQuery
 polls object____ =
     Object.selectionForCompositeField "polls" [] object____ (Basics.identity >> Decode.list)
+
+
+type alias PollRequiredArguments =
+    { pollId : PollApi.ScalarCodecs.Id }
+
+
+poll :
+    PollRequiredArguments
+    -> SelectionSet decodesTo PollApi.Object.Poll
+    -> SelectionSet (Maybe decodesTo) RootQuery
+poll requiredArgs____ object____ =
+    Object.selectionForCompositeField "poll" [ Argument.required "pollId" requiredArgs____.pollId (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) ] object____ (Basics.identity >> Decode.nullable)
