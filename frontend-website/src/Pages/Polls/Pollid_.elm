@@ -1,7 +1,8 @@
 module Pages.Polls.Pollid_ exposing (Model, Msg, page)
 
+import Components.Navbar exposing (navbar)
 import Gen.Params.Polls.Pollid_ exposing (Params)
-import Graphql.Http exposing (mutationRequest, queryRequest, send)
+import Graphql.Http exposing (HttpError(..), RawError(..), mutationRequest, queryRequest, send)
 import Graphql.Operation exposing (RootQuery)
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import Html as H exposing (Html)
@@ -134,7 +135,7 @@ init { params } =
 type Msg
     = GetData
     | NoOpString String
-    | GotPolls (List Poll)
+    | GotPolls (RemoteData (Graphql.Http.Error (List Poll)) (List Poll))
     | SetFieldAnswer Id Id String
     | SubmitPoll Id
     | GotAnswer (Maybe AddCharFieldAnswerPayload)
@@ -160,8 +161,8 @@ update msg model =
             -- in
             ( model, Cmd.none )
 
-        ( GotPolls polls, _ ) ->
-            ( Success polls, Cmd.none )
+        ( GotPolls webResult, _ ) ->
+            ( RemoteData.mapError errorToString webResult, Cmd.none )
 
         ( SetFieldAnswer pollId fieldId val, Success polls ) ->
             let
@@ -206,6 +207,30 @@ update msg model =
             --         Debug.log "answer res" a
             -- in
             ( model, Cmd.none )
+
+
+errorToString : Graphql.Http.Error (List Poll) -> String
+errorToString err =
+    case err of
+        GraphqlError _ _ ->
+            "grqphql Error"
+
+        HttpError httpError ->
+            case httpError of
+                Timeout ->
+                    "Timeout"
+
+                NetworkError ->
+                    "NetworkError"
+
+                BadStatus _ _ ->
+                    "BadStatus"
+
+                BadPayload _ ->
+                    "BadPayload"
+
+                BadUrl _ ->
+                    "BadUrl"
 
 
 payloadResultToMessage : Result (Graphql.Http.Error (Maybe AddCharFieldAnswerPayload)) (Maybe AddCharFieldAnswerPayload) -> Msg
@@ -316,7 +341,7 @@ charFieldFragments =
 
 resultToMessage : Result (Graphql.Http.Error (List Poll)) (List Poll) -> Msg
 resultToMessage res =
-    Result.withDefault [] res
+    RemoteData.fromResult res
         |> GotPolls
 
 
@@ -400,9 +425,10 @@ view model =
     { title = "Home | Polls"
     , body =
         [ H.div
-            [ HA.class "min-h-screen h-full bg-neutral-100" ]
+            [ HA.class "min-h-screen bg-neutral-100" ]
             [ navbar
-            , header
+
+            -- , header
             , content model
             ]
         ]
@@ -413,22 +439,22 @@ content : Model -> Html Msg
 content model =
     case model of
         NotAsked ->
+            H.div [] []
+
+        Loading ->
+            H.div [] [ H.text "Loading" ]
+
+        Failure failuremessage ->
             H.div
                 [ HA.class "p-4 w-4/6 mx-auto" ]
-                [ H.div [ HA.class "py-8" ]
-                    [ H.p [] [ H.text "Something appears to have gone wrong." ]
+                [ H.div [ HA.class "py-8 text-red-500" ]
+                    [ H.p [] [ H.text <| "There has been a " ++ failuremessage ]
                     , H.p [] [ H.text "Click the button to refresh the poll" ]
                     ]
 
                 --TODO(nathan): edit button to only get data from the poll in the url
                 , refreshDataButton
                 ]
-
-        Loading ->
-            H.div [] [ H.text "Loading" ]
-
-        Failure failuremessage ->
-            H.div [] [ H.text failuremessage ]
 
         Success polls ->
             viewPolls polls
@@ -563,30 +589,6 @@ submitBtn pollId =
             , HA.class "px-4 bg-slate-900 p-2 rounded-md text-lg text-white m-2"
             ]
             [ H.text "Submit Poll" ]
-        ]
-
-
-navbar : Html Msg
-navbar =
-    H.nav
-        [ HA.class "flex flex-row justify-between items-center py-4 px-6 w-full sm:w-5/6 lg:w-4/6 mx-auto " ]
-        [ H.a
-            [ HA.class "font-semibold text-2xl hover:underline hover:font-bold decoration-solid"
-            , HA.href "/"
-            ]
-            [ H.text "Polls" ]
-        , H.div [] []
-        , H.div [] []
-        , H.a
-            [ HA.href "/blog"
-            , HA.class "hover:decoration-solid text-lg hover:font-semibold hover:underline decoration-solid"
-            ]
-            [ H.text "Blog" ]
-        , H.a
-            [ HA.href "/login"
-            , HA.class "bg-slate-900 text-white py-2 px-4 rounded-md hover:font-semibold"
-            ]
-            [ H.text "Login" ]
         ]
 
 
