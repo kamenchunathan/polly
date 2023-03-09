@@ -37,7 +37,9 @@ header =
 content : Html msg
 content =
     H.div [ HA.class "w-5/6 mx-auto text-lg" ]
-        [ creatingPolls
+        [ -- TODO: for testing authentication. Remove
+          H.a [ HA.href "/polls/5" ] [ H.text "Poll 5" ]
+        , creatingPolls
         , sharingPolls
         , dataAnalysis
         ]

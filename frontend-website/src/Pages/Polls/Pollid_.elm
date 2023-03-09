@@ -20,9 +20,9 @@ import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page _ req_params =
+page { user } req_params =
     Page.element
-        { init = init req_params
+        { init = init req_params user
         , update = update
         , view = view
         , subscriptions = subscriptions
@@ -42,22 +42,27 @@ type alias Model =
     { requestedPollId : String
     , poll : RemoteData RequestError Poll
     , req : Request.With Params
+    , user : Maybe Shared.User
     }
 
 
-init : Request.With Params -> ( Model, Cmd Msg )
-init ({ params } as req) =
-    let
-        query_request =
-            specificPoll (Id params.pollid)
-                |> queryRequest "http://localhost:8000/graphql/"
-                |> send (resultToMessage GotPoll)
-    in
+query_request : String -> Maybe Shared.User -> Cmd Msg
+query_request pollId user =
+    specificPoll (Id pollId)
+        |> queryRequest "http://localhost:8000/graphql/"
+        |> Graphql.Http.withOperationName "initial_request"
+        |> Maybe.withDefault identity (Maybe.map (\{ authToken } -> Graphql.Http.withHeader "Authorization" ("Bearer " ++ authToken)) user)
+        |> send (resultToMessage GotPoll)
+
+
+init : Request.With Params -> Maybe Shared.User -> ( Model, Cmd Msg )
+init ({ params } as req) user =
     ( { requestedPollId = params.pollid
       , poll = NotAsked
       , req = req
+      , user = Nothing
       }
-    , query_request
+    , query_request params.pollid user
     )
 
 

@@ -1,7 +1,8 @@
 module Shared exposing
     ( Flags
     , Model
-    , Msg
+    , Msg(..)
+    , User
     , init
     , subscriptions
     , update
@@ -9,6 +10,7 @@ module Shared exposing
 
 import Json.Decode as Json
 import Request exposing (Request)
+import Time
 
 
 type alias Flags =
@@ -16,7 +18,9 @@ type alias Flags =
 
 
 type alias User =
-    { token : String }
+    { authToken : String
+    , expiration : Time.Posix
+    }
 
 
 type alias Model =
@@ -24,7 +28,10 @@ type alias Model =
 
 
 type Msg
-    = NoOp
+    = Signin
+        { authToken : String
+        , expiration : Time.Posix
+        }
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
@@ -33,10 +40,11 @@ init _ _ =
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
-update _ msg model =
+update _ msg _ =
     case msg of
-        NoOp ->
-            ( model, Cmd.none )
+        Signin user ->
+            -- TODO: persist user data
+            ( { user = Just user }, Cmd.none )
 
 
 subscriptions : Request -> Model -> Sub Msg

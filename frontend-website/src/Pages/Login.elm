@@ -3,22 +3,26 @@ module Pages.Login exposing (Model, Msg, page)
 import Components.Navbar exposing (navbar)
 import Effect exposing (Effect)
 import Gen.Params.Login exposing (Params)
+import Gen.Route as Route exposing (Route(..))
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Http as Http
+import Iso8601
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Page
+import RemoteData exposing (RemoteData)
 import Request
-import Shared
+import Shared as Shared
+import Time exposing (Posix)
 import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page _ _ =
+page _ req =
     Page.advanced
-        { init = init
+        { init = init req
         , update = update
         , view = view
         , subscriptions = subscriptions
@@ -35,9 +39,16 @@ type alias LoginData =
     }
 
 
+type alias TokenResponse =
+    { authToken : String
+    , expiration : Posix
+    }
+
+
 type alias Model =
     { login_data : LoginData
-    , result : Maybe String
+    , response : RemoteData Http.Error TokenResponse
+    , req : Request.With Params
     }
 
 
@@ -50,13 +61,22 @@ encodeLoginData obj =
         ]
 
 
-init : ( Model, Effect Msg )
-init =
+decodeTokenResponse : Decode.Decoder TokenResponse
+decodeTokenResponse =
+    Decode.map2
+        TokenResponse
+        (Decode.field "token" Decode.string)
+        (Decode.field "expires" Iso8601.decoder)
+
+
+init : Request.With Params -> ( Model, Effect msg )
+init req =
     ( { login_data =
             { username = Nothing
             , password = Nothing
             }
-      , result = Nothing
+      , response = RemoteData.NotAsked
+      , req = req
       }
     , Effect.none
     )
@@ -70,7 +90,7 @@ type Msg
     = UpdateUsername String
     | UpdatePassword String
     | PerformLogin
-    | LoginResult String
+    | LoginResult (RemoteData Http.Error TokenResponse)
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
@@ -102,7 +122,9 @@ update msg ({ login_data } as model) =
                         , body =
                             encodeLoginData login_data
                                 |> Http.jsonBody
-                        , expect = Http.expectString (Result.withDefault "" >> LoginResult)
+                        , expect =
+                            Http.expectJson (RemoteData.fromResult >> LoginResult)
+                                decodeTokenResponse
                         }
             in
             ( model, Effect.fromCmd req )
@@ -111,8 +133,19 @@ update msg ({ login_data } as model) =
             let
                 _ =
                     Debug.log "" res
+
+                signing_eff =
+                    case res of
+                        RemoteData.Success user ->
+                            Effect.batch
+                                [ Effect.fromShared <| Shared.Signin user
+                                , Effect.fromCmd <| Request.pushRoute Route.Home_ model.req
+                                ]
+
+                        _ ->
+                            Effect.none
             in
-            ( model, Effect.none )
+            ( { model | response = res }, signing_eff )
 
 
 
