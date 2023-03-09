@@ -186,9 +186,11 @@ login_form _ =
                     [ HA.for "username-input" ]
                     [ H.text "Username" ]
                 , H.input
-                    [ HA.type_ "text"
+                    [ HA.id "username-input"
+                    , HA.type_ "text"
                     , HA.class ""
-                    , HA.id "username-input"
+                    , HA.attribute "autocomplete" "username email"
+                    , HA.autofocus True
                     , HE.onInput UpdateUsername
                     ]
                     []
@@ -198,9 +200,11 @@ login_form _ =
                     [ HA.for "password-input" ]
                     [ H.text "Password" ]
                 , H.input
-                    [ HA.type_ "password"
+                    [ HA.id "password-input"
+                    , HA.type_ "password"
+                    , HA.name "password"
+                    , HA.attribute "autocomplete" "new-password"
                     , HA.class ""
-                    , HA.id "password-input"
                     , HE.onInput UpdatePassword
                     ]
                     []

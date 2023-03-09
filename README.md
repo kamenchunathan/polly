@@ -11,7 +11,7 @@
      - [x] Extract selectionSets into a local module
      - [x] create SelectionSets to get specific polls based on id
   - [ ] Do authentication and detect if a poll has already been answered by a user
-    - [x] Create Shared user model
+    - [x] Create a Shared user model
     - [x] Implement login flow
     - [ ] Persist user token in local storage and fetch it on starting the app
   - [ ] Poll Submission
@@ -21,4 +21,4 @@
   - [ ] Create Poll
   - [ ] PollDashboard: 
     - [ ] Aggregate and display Poll results as graphs etc. in a poll dashboard
-    - [ ] Creator of poll to manage the poll: Editing, deleting
+    - [ ] Creator of the poll to manage the poll: Editing, deleting
