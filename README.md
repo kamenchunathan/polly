@@ -13,7 +13,7 @@
   - [ ] Do authentication and detect if a poll has already been answered by a user
     - [x] Create a Shared user model
     - [x] Implement login flow
-    - [ ] Persist user token in local storage and fetch it on starting the app
+    - [x] Persist user token in local storage and fetch it on starting the app
   - [ ] Poll Submission
   - [ ] Integrate returned errors in poll fields i.e. validation
   - [ ] Home Page / Landing page Options

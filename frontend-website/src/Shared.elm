@@ -1,4 +1,4 @@
-module Shared exposing
+port module Shared exposing
     ( Flags
     , Model
     , Msg(..)
@@ -8,7 +8,9 @@ module Shared exposing
     , update
     )
 
-import Json.Decode as Json
+import Iso8601
+import Json.Decode as Decode
+import Json.Encode as Json
 import Request exposing (Request)
 import Time
 
@@ -27,6 +29,31 @@ type alias Model =
     { user : Maybe User }
 
 
+encodeUser : { a | authToken : String, expiration : Time.Posix } -> Json.Value
+encodeUser { authToken, expiration } =
+    Json.object
+        [ ( "authToken", Json.string authToken )
+        , ( "expiration", Iso8601.encode expiration )
+        ]
+
+
+userDecoder : Decode.Decoder User
+userDecoder =
+    Decode.map2 User
+        (Decode.field "authToken" Decode.string)
+        (Decode.field "expiration" Iso8601.decoder)
+
+
+init : Request -> Flags -> ( Model, Cmd Msg )
+init _ flags =
+    ( { -- TODO: Handle errors from decoding better
+        user =
+            Result.toMaybe (Decode.decodeValue userDecoder flags)
+      }
+    , Cmd.none
+    )
+
+
 type Msg
     = Signin
         { authToken : String
@@ -34,17 +61,14 @@ type Msg
         }
 
 
-init : Request -> Flags -> ( Model, Cmd Msg )
-init _ _ =
-    ( { user = Nothing }, Cmd.none )
-
-
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update _ msg _ =
     case msg of
         Signin user ->
-            -- TODO: persist user data
-            ( { user = Just user }, Cmd.none )
+            ( { user = Just user }, persistUserToLocalStorage (encodeUser user) )
+
+
+port persistUserToLocalStorage : Json.Value -> Cmd msg
 
 
 subscriptions : Request -> Model -> Sub Msg

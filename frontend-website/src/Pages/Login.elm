@@ -131,9 +131,8 @@ update msg ({ login_data } as model) =
 
         LoginResult res ->
             let
-                _ =
-                    Debug.log "" res
-
+                -- _ =
+                --     Debug.log "" res
                 signing_eff =
                     case res of
                         RemoteData.Success user ->

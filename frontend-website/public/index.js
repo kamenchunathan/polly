@@ -1,12 +1,16 @@
-/** @typedef {{load: (Promise<unknown>); flags: (unknown)}} ElmPagesInit */
+// TODO: handle missing values in a nicer way
+let authToken = localStorage.getItem('authToken')
+let expiration = localStorage.getItem('expiration')
 
-/** @type ElmPagesInit */
-export default {
-  load: async function(elmLoaded) {
-    const app = await elmLoaded;
-    console.log("App loaded", app);
-  },
-  flags: function() {
-    return "You can decode this in Shared.elm using Json.Decode.string!";
-  },
-};
+let app = Elm.Main.init({
+  flags: {
+    authToken,
+    expiration
+  }
+}
+);
+
+app.ports.persistUserToLocalStorage.subscribe(({ authToken, expiration }) => {
+  localStorage.setItem('authToken', authToken);
+  localStorage.setItem('expiration', expiration);
+})
