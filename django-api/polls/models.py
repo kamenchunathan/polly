@@ -14,11 +14,9 @@ class Poll(models.Model):
 class PollCharField(models.Model):
     text = models.CharField('Question Text', max_length=100)
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
-    
+
     def __str__(self):
         return self.text[:30]
-
-
 
 
 class PollCharFieldAnswer(models.Model):
@@ -38,14 +36,12 @@ class PollCharFieldAnswer(models.Model):
         return self.answer[:30]
 
 
-
 class PollTextField(models.Model):
     text = models.CharField('Question Text', max_length=100)
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.text[:30]
-
 
 
 class PollTextFieldAnswer(models.Model):
@@ -65,16 +61,13 @@ class PollTextFieldAnswer(models.Model):
         return self.answer[:30]
 
 
-
 class PollChoiceField(models.Model):
     text = models.CharField('Question Text', max_length=100)
     choices = ArrayField(models.CharField('Choice', max_length=100))
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
-    
+
     def __str__(self):
         return self.text[:30]
-
-
 
 
 class PollChoiceFieldAnswer(models.Model):
@@ -95,22 +88,18 @@ class PollChoiceFieldAnswer(models.Model):
             return
 
         super().save(*args, **kwargs)
-        
+
     def __str__(self):
         return self.selected_choice[:30]
-
-
 
 
 class PollMultiChoiceField(models.Model):
     text = models.CharField('Question Text', max_length=100)
     choices = ArrayField(models.CharField('Choice', max_length=100))
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE)
-    
+
     def __str__(self):
         return self.text[:30]
-
-
 
 
 class PollMultiChoiceFieldAnswer(models.Model):
@@ -134,4 +123,3 @@ class PollMultiChoiceFieldAnswer(models.Model):
                 return
 
         super().save(*args, **kwargs)
-

@@ -3,6 +3,7 @@ from graphene_django.utils import camelize
 
 
 class GraphqlError(graphene.Scalar):
+
     @staticmethod
     def serialize(errors):
         print(errors)
@@ -14,5 +15,5 @@ class GraphqlError(graphene.Scalar):
 
         if errors.get('__all__', False):
             errors['non_field_errors'] = errors.pop('__all__')
-        
+
         return camelize(errors)

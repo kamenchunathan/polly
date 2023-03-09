@@ -5,6 +5,16 @@ from graphene_django import DjangoObjectType
 from graphene_django.forms.mutation import DjangoModelFormMutation
 
 from authentication.models import User as UserModel
+from polls.forms import (
+    PollCharFieldForm,
+    PollTextFieldForm,
+    PollChoiceFieldForm,
+    PollMultiChoiceFieldForm,
+    PollCharFieldAnswerForm,
+    PollTextFieldAnswerForm,
+    PollChoiceFieldAnswerForm,
+    PollMultiChoiceFieldAnswerForm
+)
 from polls.models import (
     Poll as PollModel,
     PollCharField as PollCharFieldModel,
@@ -16,16 +26,7 @@ from polls.models import (
     PollTextField as PollTextFieldModel,
     PollTextFieldAnswer as PollTextFieldAnswerModel
 )
-from polls.forms import (
-    PollCharFieldForm,
-    PollTextFieldForm,
-    PollChoiceFieldForm,
-    PollMultiChoiceFieldForm,
-    PollCharFieldAnswerForm,
-    PollTextFieldAnswerForm,
-    PollChoiceFieldAnswerForm,
-    PollMultiChoiceFieldAnswerForm
-)
+
 
 # -------------------------------- QUERIES -------------------------------
 
@@ -100,20 +101,18 @@ class Poll(DjangoObjectType):
     poll_fields = graphene.NonNull(graphene.List(graphene.NonNull(PollField)))
 
     def resolve_poll_fields(root, info, **kwargs) -> Iterable[PollField]:
-        return [*PollCharFieldModel.objects.filter(poll=root),
-                *PollTextFieldModel.objects.filter(poll=root),
-                *PollChoiceFieldModel.objects.filter(poll=root),
-                *PollMultiChoiceFieldModel.objects.filter(poll=root)
-                ]
+        return [
+            *PollCharFieldModel.objects.filter(poll=root),
+            *PollTextFieldModel.objects.filter(poll=root),
+            *PollChoiceFieldModel.objects.filter(poll=root),
+            *PollMultiChoiceFieldModel.objects.filter(poll=root)
+        ]
 
 
 class RootQuery(graphene.ObjectType):
     hello = graphene.String(required=True)
     polls = graphene.NonNull(graphene.List(graphene.NonNull(Poll)))
-    poll = graphene.Field(
-        Poll,
-        pollId=graphene.ID(required=True)
-    )
+    poll = graphene.Field(Poll, pollId=graphene.ID(required=True))
 
     def resolve_hello(root, info, **kwargs):
         return 'Hujambo mkuu'
@@ -128,8 +127,9 @@ class RootQuery(graphene.ObjectType):
 
         return
 
+
 # ----------------------------------------------------------------------------
-# -------------------------------- MUTATIONS  -------------------------------
+# -------------------------------- MUTATIONS  --------------------------------
 # ----------------------------------------------------------------------------
 
 

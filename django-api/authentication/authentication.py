@@ -5,6 +5,8 @@ from .models import ApiToken
 
 
 class ExpiringTokenAuthentication(BaseBackend):
+    """"""
+
     def authenticate(self, request, key=None):
         if key is None:
             auth_header = request.headers.get('Authorization')
@@ -20,7 +22,7 @@ class ExpiringTokenAuthentication(BaseBackend):
 
         try:
             token = ApiToken.objects.get(key=key)
-        except:
+        except ExpiringTokenAuthentication.DoesNotExist:
             return None
 
         if timezone.now() > token.expires():
