@@ -14,7 +14,11 @@ SECRET_KEY = 'django-insecure-cv896#x62tc5t=7inz(am8rd%)q27dkvcz#oz5h(vcn261jnx1
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0'
+]
 
 # Application definition
 
@@ -29,6 +33,7 @@ INSTALLED_APPS = [
 
     # third party
     'graphene_django',
+    'guardian',
 
     # local
     'authentication',
@@ -129,19 +134,26 @@ AUTH_USER_MODEL = 'authentication.User'
 
 AUTHENTICATION_BACKENDS = [
     'authentication.authentication.ExpiringTokenAuthentication',
-    *DEFAULT_AUTH_BACKENDS
+    *DEFAULT_AUTH_BACKENDS,
+    'guardian.backends.ObjectPermissionBackend',
 ]
 
 # Api Token Lifetime in Seconds
 TOKEN_LIFETIME = 7 * 24 * 3600
 
 # Cors Settings
-CORS_ALLOWED_ORIGINS = ['http://localhost:1234']
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:1234',
+    'http://0.0.0.0:1234'
+]
 
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF Token Settings
-CSRF_TRUSTED_ORIGINS = ['http://localhost:1234']
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:1234',
+    'http://0.0.0.0:1234'
+]
 
 # Graphene Django
 GRAPHENE = {'SCHEMA': 'graphql_api.schema.schema'}

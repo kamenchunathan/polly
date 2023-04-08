@@ -1,14 +1,36 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from guardian.shortcuts import assign_perm
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 from authentication.models import User
 
 
 class Poll(models.Model):
     title = models.CharField('Poll title', max_length=100)
     description = models.CharField('Description', max_length=255, blank=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        # The edit poll permission is for this class as well as any fields
+        # associated with the poll
+        #
+        # The answer poll permission will be used to check whether a user
+        # can answer questions (fields) on the poll
+        permissions = (
+            ('edit_poll', 'Can edit poll'),
+            ('answer_poll', 'Can answer a poll')
+        )
 
     def __str__(self):
         return self.title[:30]
+
+
+@receiver(post_save, sender=Poll)
+def assign_user_perms(sender, instance, created, **kwargs):
+    poll_owner: User = instance.owner
+    if created and not poll_owner.is_anonymous:
+        assign_perm('edit_poll', poll_owner, instance)
 
 
 class PollCharField(models.Model):
@@ -104,14 +126,14 @@ class PollMultiChoiceField(models.Model):
 
 class PollMultiChoiceFieldAnswer(models.Model):
     selected_choices = ArrayField(
-        models.CharField('Selected Choices', max_length=100))
+        models.CharField('Selected Choices', max_length=100)
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     field = models.ForeignKey(
         PollMultiChoiceField,
         on_delete=models.CASCADE,
         related_name='multichoice_field_answers',
         related_query_name='multichoice_field_answer'
-
     )
 
     class Meta:
