@@ -3,6 +3,7 @@ from typing import Iterable
 import graphene
 from graphene_django import DjangoObjectType
 from graphene_django.forms.mutation import DjangoModelFormMutation
+from graphene_django.types import ErrorType
 
 from authentication.models import User as UserModel
 from polls.forms import (
@@ -139,9 +140,19 @@ class CreatePoll(graphene.Mutation):
         description = graphene.String()
 
     poll = graphene.Field(Poll)
+    errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
-    def mutate(root, info, title=None, description=None):
-        poll = PollModel.objects.create(title=title, description=description)
+    @classmethod
+    def mutate(cls, root, info, title=None, description=None):
+        if description is None:
+            description = ''
+
+        poll = PollModel.objects.create(
+            title=title, 
+            owner=info.context.user,
+            description=description,
+        )
+        print(poll)
         return CreatePoll(poll=poll)
 
 
