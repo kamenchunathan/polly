@@ -7,6 +7,7 @@ from .models import (
     PollChoiceField,
     PollTextField,
     PollMultiChoiceField,
+    PollCharFieldAnswer,
     PollChoiceFieldAnswer,
     PollMultiChoiceFieldAnswer,
     PollTextFieldAnswer
@@ -41,15 +42,16 @@ class PollMultiChoiceFieldForm(forms.ModelForm):
     choices = SimpleArrayField(forms.CharField(max_length=100))
 
 
-class PollCharFieldAnswerForm(forms.Form):
-    answer = forms.CharField(max_length=100, required=True)
-    field = forms.ModelChoiceField(queryset=PollCharField.objects.all(), required=True)
+class PollCharFieldAnswerForm(forms.ModelForm):
+    class Meta:
+        model = PollCharFieldAnswer
+        fields = ('answer', 'field')
 
 
 class PollChoiceFieldAnswerForm(forms.ModelForm):
     class Meta:
         model = PollChoiceFieldAnswer
-        fields = '__all__'
+        fields = ('selected_choice', 'field')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -64,7 +66,7 @@ class PollChoiceFieldAnswerForm(forms.ModelForm):
 class PollMultiChoiceFieldAnswerForm(forms.ModelForm):
     class Meta:
         model = PollMultiChoiceFieldAnswer
-        fields = '__all__'
+        fields = ('selected_choices', 'field')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -84,4 +86,4 @@ class PollMultiChoiceFieldAnswerForm(forms.ModelForm):
 class PollTextFieldAnswerForm(forms.ModelForm):
     class Meta:
         model = PollTextFieldAnswer
-        fields = '__all__'
+        fields = ('answer', 'field')

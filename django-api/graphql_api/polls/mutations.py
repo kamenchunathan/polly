@@ -1,13 +1,27 @@
 import graphene
 
 from django.conf import settings
-from graphene_django.forms.mutation import DjangoModelFormMutation, DjangoFormMutation
+from graphene_django.forms.mutation import (
+    DjangoModelFormMutation,
+    DjangoFormMutation,
+    BaseDjangoFormMutation,
+    DjangoFormMutationOptions
+)
 from graphene_django.types import ErrorType
 
 from authentication.models import User as UserModel
 from polls.models import (
     Poll as PollModel,
-    PollCharFieldAnswer as PollCharFieldAnswerModel
+    PollCharField as PollCharFieldModel,
+    PollTextField as PollTextFieldModel,
+    PollChoiceField as PollChoiceFieldModel,
+    PollMultiChoiceField as PollMultiChoiceFieldModel,
+    PollCharFieldAnswer as PollCharFieldAnswerModel,
+    PollTextFieldAnswer as PollTextFieldAnswerModel,
+    PollChoiceFieldAnswer as PollChoiceFieldAnswerModel,
+    PollMultiChoiceFieldAnswer as PollMultiChoiceFieldAnswerModel
+
+
 )
 from polls.forms import (
     PollCharFieldForm,
@@ -86,6 +100,11 @@ class AddPollMultiChoiceField(DjangoModelFormMutation):
         return_field_name = 'poll_multi_choice_field'
 
 
+# -----------------------------------------------------------------------------
+# ------------------------------- Answers -------------------------------------
+# -----------------------------------------------------------------------------
+
+
 class AddPollCharFieldAnswer(DjangoFormMutation):
     poll_char_field_answer = graphene.Field(PollCharFieldAnswer)
 
@@ -98,7 +117,7 @@ class AddPollCharFieldAnswer(DjangoFormMutation):
         try:
             obj, _ = PollCharFieldAnswerModel.objects.get_or_create(
                 user=user,
-                field=form.cleaned_data.get('field')
+                **form.cleaned_data
             )
             obj.save()
             return cls(
@@ -120,25 +139,106 @@ class AddPollCharFieldAnswer(DjangoFormMutation):
             )
 
 
-class AddPollChoiceFieldAnswer(DjangoModelFormMutation):
+class AddPollChoiceFieldAnswer(DjangoFormMutation):
     poll_choice_field_answer = graphene.Field(PollChoiceFieldAnswer)
 
     class Meta:
         form_class = PollChoiceFieldAnswerForm
-        return_field_name = 'poll_choice_field_answer'
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        user: UserModel = info.context.user
+        try:
+            obj, created = PollChoiceFieldAnswerModel.objects.get_or_create(
+                user=user,
+                **form.cleaned_data
+            )
+            if not created:
+                obj.save()
+            return cls(
+                errors=[],
+                poll_choice_field_answer=obj
+            )
+        except Exception as e:
+            debug_msgs: list[str] = []
+            if settings.DEBUG:
+                debug_msgs = [
+                    str(e)
+                ]
+
+            return cls(
+                errors=[{'field': 'id',
+                         'messages': ['Something went wrong', *debug_msgs]
+                         }],
+                poll_choice_field_answer=obj
+            )
 
 
-class AddPollTextFieldAnswer(DjangoModelFormMutation):
+class AddPollTextFieldAnswer(DjangoFormMutation):
     poll_text_field_answer = graphene.Field(PollTextFieldAnswer)
 
     class Meta:
         form_class = PollTextFieldAnswerForm
         return_field_name = 'poll_text_field_answer'
 
+    @classmethod
+    def perform_mutate(cls, form, info):
+        user: UserModel = info.context.user
+        try:
+            obj, created = PollTextFieldAnswerModel.objects.get_or_create(
+                user=user,
+                **form.cleaned_data
+            )
+            if not created:
+                obj.save()
+            return cls(
+                errors=[],
+                poll_text_field_answer=obj
+            )
+        except Exception as e:
+            debug_msgs: list[str] = []
+            if settings.DEBUG:
+                debug_msgs = [
+                    str(e)
+                ]
 
-class AddPollMultiChoiceFieldAnswer(DjangoModelFormMutation):
+            return cls(
+                errors=[{'field': 'id',
+                         'messages': ['Something went wrong', *debug_msgs]
+                         }],
+                poll_text_field_answer=obj
+            )
+
+
+class AddPollMultiChoiceFieldAnswer(DjangoFormMutation):
     poll_multi_choice_field_answer = graphene.Field(PollMultiChoiceFieldAnswer)
 
     class Meta:
         form_class = PollMultiChoiceFieldAnswerForm
-        return_field_name = 'poll_multi_choice_field_answer'
+
+    @classmethod
+    def perform_mutate(cls, form, info):
+        user: UserModel = info.context.user
+        try:
+            obj, _ = PollMultiChoiceFieldAnswerModel.objects.get_or_create(
+                user=user,
+                **form.cleaned_data
+            )
+            obj.save()
+            return cls(
+                errors=[],
+                poll_multi_choice_field_answer=obj
+            )
+        except Exception as e:
+            debug_msgs: list[str] = []
+            if settings.DEBUG:
+                debug_msgs = [
+                    str(e)
+                ]
+
+            return cls(
+                errors=[{'field': 'id',
+                         'messages': ['Something went wrong', *debug_msgs]
+                         }],
+                poll_multi_choice_field_answer=obj
+            )
