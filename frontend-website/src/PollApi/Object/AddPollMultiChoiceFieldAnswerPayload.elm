@@ -19,18 +19,28 @@ import PollApi.ScalarCodecs
 import PollApi.Union
 
 
+selectedChoices : SelectionSet String PollApi.Object.AddPollMultiChoiceFieldAnswerPayload
+selectedChoices =
+    Object.selectionForField "String" "selectedChoices" [] Decode.string
+
+
+field : SelectionSet PollApi.ScalarCodecs.Id PollApi.Object.AddPollMultiChoiceFieldAnswerPayload
+field =
+    Object.selectionForField "ScalarCodecs.Id" "field" [] (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapCodecs |> .codecId |> .decoder)
+
+
+errors :
+    SelectionSet decodesTo PollApi.Object.ErrorType
+    -> SelectionSet (Maybe (List (Maybe decodesTo))) PollApi.Object.AddPollMultiChoiceFieldAnswerPayload
+errors object____ =
+    Object.selectionForCompositeField "errors" [] object____ (Basics.identity >> Decode.nullable >> Decode.list >> Decode.nullable)
+
+
 pollMultiChoiceFieldAnswer :
     SelectionSet decodesTo PollApi.Object.PollMultiChoiceFieldAnswer
     -> SelectionSet (Maybe decodesTo) PollApi.Object.AddPollMultiChoiceFieldAnswerPayload
 pollMultiChoiceFieldAnswer object____ =
     Object.selectionForCompositeField "pollMultiChoiceFieldAnswer" [] object____ (Basics.identity >> Decode.nullable)
-
-
-errors :
-    SelectionSet decodesTo PollApi.Object.ErrorType
-    -> SelectionSet (List decodesTo) PollApi.Object.AddPollMultiChoiceFieldAnswerPayload
-errors object____ =
-    Object.selectionForCompositeField "errors" [] object____ (Basics.identity >> Decode.list)
 
 
 clientMutationId : SelectionSet (Maybe String) PollApi.Object.AddPollMultiChoiceFieldAnswerPayload

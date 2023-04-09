@@ -24,3 +24,10 @@ poll :
     -> SelectionSet (Maybe decodesTo) PollApi.Object.CreatePoll
 poll object____ =
     Object.selectionForCompositeField "poll" [] object____ (Basics.identity >> Decode.nullable)
+
+
+errors :
+    SelectionSet decodesTo PollApi.Object.ErrorType
+    -> SelectionSet (List decodesTo) PollApi.Object.CreatePoll
+errors object____ =
+    Object.selectionForCompositeField "errors" [] object____ (Basics.identity >> Decode.list)

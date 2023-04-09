@@ -34,3 +34,10 @@ user :
     -> SelectionSet decodesTo PollApi.Object.PollCharFieldAnswer
 user object____ =
     Object.selectionForCompositeField "user" [] object____ Basics.identity
+
+
+field :
+    SelectionSet decodesTo PollApi.Object.PollCharField
+    -> SelectionSet decodesTo PollApi.Object.PollCharFieldAnswer
+field object____ =
+    Object.selectionForCompositeField "field" [] object____ Basics.identity

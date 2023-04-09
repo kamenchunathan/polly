@@ -25,31 +25,26 @@ buildAddPollCharFieldAnswerInput required____ fillOptionals____ =
     let
         optionals____ =
             fillOptionals____
-                { id = Absent, clientMutationId = Absent }
+                { clientMutationId = Absent }
     in
-    { answer = required____.answer, user = required____.user, field = required____.field, id = optionals____.id, clientMutationId = optionals____.clientMutationId }
+    { answer = required____.answer, field = required____.field, clientMutationId = optionals____.clientMutationId }
 
 
 type alias AddPollCharFieldAnswerInputRequiredFields =
     { answer : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
     }
 
 
 type alias AddPollCharFieldAnswerInputOptionalFields =
-    { id : OptionalArgument PollApi.ScalarCodecs.Id
-    , clientMutationId : OptionalArgument String
-    }
+    { clientMutationId : OptionalArgument String }
 
 
 {-| Type for the AddPollCharFieldAnswerInput input object.
 -}
 type alias AddPollCharFieldAnswerInput =
     { answer : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
-    , id : OptionalArgument PollApi.ScalarCodecs.Id
     , clientMutationId : OptionalArgument String
     }
 
@@ -59,7 +54,7 @@ type alias AddPollCharFieldAnswerInput =
 encodeAddPollCharFieldAnswerInput : AddPollCharFieldAnswerInput -> Value
 encodeAddPollCharFieldAnswerInput input____ =
     Encode.maybeObject
-        [ ( "answer", Encode.string input____.answer |> Just ), ( "user", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.user |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "id", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) |> Encode.optional input____.id ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
+        [ ( "answer", Encode.string input____.answer |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
 
 
 buildAddPollCharFieldInput :
@@ -113,31 +108,26 @@ buildAddPollChoiceFieldAnswerInput required____ fillOptionals____ =
     let
         optionals____ =
             fillOptionals____
-                { id = Absent, clientMutationId = Absent }
+                { clientMutationId = Absent }
     in
-    { selectedChoice = required____.selectedChoice, user = required____.user, field = required____.field, id = optionals____.id, clientMutationId = optionals____.clientMutationId }
+    { selectedChoice = required____.selectedChoice, field = required____.field, clientMutationId = optionals____.clientMutationId }
 
 
 type alias AddPollChoiceFieldAnswerInputRequiredFields =
     { selectedChoice : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
     }
 
 
 type alias AddPollChoiceFieldAnswerInputOptionalFields =
-    { id : OptionalArgument PollApi.ScalarCodecs.Id
-    , clientMutationId : OptionalArgument String
-    }
+    { clientMutationId : OptionalArgument String }
 
 
 {-| Type for the AddPollChoiceFieldAnswerInput input object.
 -}
 type alias AddPollChoiceFieldAnswerInput =
     { selectedChoice : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
-    , id : OptionalArgument PollApi.ScalarCodecs.Id
     , clientMutationId : OptionalArgument String
     }
 
@@ -147,7 +137,7 @@ type alias AddPollChoiceFieldAnswerInput =
 encodeAddPollChoiceFieldAnswerInput : AddPollChoiceFieldAnswerInput -> Value
 encodeAddPollChoiceFieldAnswerInput input____ =
     Encode.maybeObject
-        [ ( "selectedChoice", Encode.string input____.selectedChoice |> Just ), ( "user", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.user |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "id", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) |> Encode.optional input____.id ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
+        [ ( "selectedChoice", Encode.string input____.selectedChoice |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
 
 
 buildAddPollChoiceFieldInput :
@@ -203,31 +193,26 @@ buildAddPollMultiChoiceFieldAnswerInput required____ fillOptionals____ =
     let
         optionals____ =
             fillOptionals____
-                { id = Absent, clientMutationId = Absent }
+                { clientMutationId = Absent }
     in
-    { selectedChoices = required____.selectedChoices, user = required____.user, field = required____.field, id = optionals____.id, clientMutationId = optionals____.clientMutationId }
+    { selectedChoices = required____.selectedChoices, field = required____.field, clientMutationId = optionals____.clientMutationId }
 
 
 type alias AddPollMultiChoiceFieldAnswerInputRequiredFields =
     { selectedChoices : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
     }
 
 
 type alias AddPollMultiChoiceFieldAnswerInputOptionalFields =
-    { id : OptionalArgument PollApi.ScalarCodecs.Id
-    , clientMutationId : OptionalArgument String
-    }
+    { clientMutationId : OptionalArgument String }
 
 
 {-| Type for the AddPollMultiChoiceFieldAnswerInput input object.
 -}
 type alias AddPollMultiChoiceFieldAnswerInput =
     { selectedChoices : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
-    , id : OptionalArgument PollApi.ScalarCodecs.Id
     , clientMutationId : OptionalArgument String
     }
 
@@ -237,7 +222,7 @@ type alias AddPollMultiChoiceFieldAnswerInput =
 encodeAddPollMultiChoiceFieldAnswerInput : AddPollMultiChoiceFieldAnswerInput -> Value
 encodeAddPollMultiChoiceFieldAnswerInput input____ =
     Encode.maybeObject
-        [ ( "selectedChoices", Encode.string input____.selectedChoices |> Just ), ( "user", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.user |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "id", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) |> Encode.optional input____.id ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
+        [ ( "selectedChoices", Encode.string input____.selectedChoices |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
 
 
 buildAddPollMultiChoiceFieldInput :
@@ -293,31 +278,26 @@ buildAddPollTextFieldAnswerInput required____ fillOptionals____ =
     let
         optionals____ =
             fillOptionals____
-                { id = Absent, clientMutationId = Absent }
+                { clientMutationId = Absent }
     in
-    { answer = required____.answer, user = required____.user, field = required____.field, id = optionals____.id, clientMutationId = optionals____.clientMutationId }
+    { answer = required____.answer, field = required____.field, clientMutationId = optionals____.clientMutationId }
 
 
 type alias AddPollTextFieldAnswerInputRequiredFields =
     { answer : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
     }
 
 
 type alias AddPollTextFieldAnswerInputOptionalFields =
-    { id : OptionalArgument PollApi.ScalarCodecs.Id
-    , clientMutationId : OptionalArgument String
-    }
+    { clientMutationId : OptionalArgument String }
 
 
 {-| Type for the AddPollTextFieldAnswerInput input object.
 -}
 type alias AddPollTextFieldAnswerInput =
     { answer : String
-    , user : PollApi.ScalarCodecs.Id
     , field : PollApi.ScalarCodecs.Id
-    , id : OptionalArgument PollApi.ScalarCodecs.Id
     , clientMutationId : OptionalArgument String
     }
 
@@ -327,7 +307,7 @@ type alias AddPollTextFieldAnswerInput =
 encodeAddPollTextFieldAnswerInput : AddPollTextFieldAnswerInput -> Value
 encodeAddPollTextFieldAnswerInput input____ =
     Encode.maybeObject
-        [ ( "answer", Encode.string input____.answer |> Just ), ( "user", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.user |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "id", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) |> Encode.optional input____.id ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
+        [ ( "answer", Encode.string input____.answer |> Just ), ( "field", (PollApi.ScalarCodecs.codecs |> PollApi.Scalar.unwrapEncoder .codecId) input____.field |> Just ), ( "clientMutationId", Encode.string |> Encode.optional input____.clientMutationId ) ]
 
 
 buildAddPollTextFieldInput :

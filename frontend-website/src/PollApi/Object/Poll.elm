@@ -34,6 +34,13 @@ description =
     Object.selectionForField "String" "description" [] Decode.string
 
 
+owner :
+    SelectionSet decodesTo PollApi.Object.User
+    -> SelectionSet decodesTo PollApi.Object.Poll
+owner object____ =
+    Object.selectionForCompositeField "owner" [] object____ Basics.identity
+
+
 pollFields :
     SelectionSet decodesTo PollApi.Union.PollField
     -> SelectionSet (List decodesTo) PollApi.Object.Poll

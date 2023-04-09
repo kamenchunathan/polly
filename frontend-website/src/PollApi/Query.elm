@@ -24,13 +24,6 @@ hello =
     Object.selectionForField "String" "hello" [] Decode.string
 
 
-polls :
-    SelectionSet decodesTo PollApi.Object.Poll
-    -> SelectionSet (List decodesTo) RootQuery
-polls object____ =
-    Object.selectionForCompositeField "polls" [] object____ (Basics.identity >> Decode.list)
-
-
 type alias PollRequiredArguments =
     { pollId : PollApi.ScalarCodecs.Id }
 
