@@ -1,21 +1,15 @@
 import graphene
 
 from django.conf import settings
-from graphene_django.forms.mutation import (
-    DjangoModelFormMutation,
-    DjangoFormMutation,
-    BaseDjangoFormMutation,
-    DjangoFormMutationOptions
-)
 from graphene_django.types import ErrorType
+from graphene_django.forms.mutation import (
+    DjangoFormMutation,
+    DjangoModelFormMutation
+)
 
 from authentication.models import User as UserModel
 from polls.models import (
     Poll as PollModel,
-    PollCharField as PollCharFieldModel,
-    PollTextField as PollTextFieldModel,
-    PollChoiceField as PollChoiceFieldModel,
-    PollMultiChoiceField as PollMultiChoiceFieldModel,
     PollCharFieldAnswer as PollCharFieldAnswerModel,
     PollTextFieldAnswer as PollTextFieldAnswerModel,
     PollChoiceFieldAnswer as PollChoiceFieldAnswerModel,
@@ -104,6 +98,9 @@ class AddPollMultiChoiceField(DjangoModelFormMutation):
 # ------------------------------- Answers -------------------------------------
 # -----------------------------------------------------------------------------
 
+# TODO(nathan): A lot of repition is present in the perform_mutation function.
+#   Come up with a suitable abstraction for this perhaps by creating a
+#   superclass for the Answer mutations
 
 class AddPollCharFieldAnswer(DjangoFormMutation):
     poll_char_field_answer = graphene.Field(PollCharFieldAnswer)
