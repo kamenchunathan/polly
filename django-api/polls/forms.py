@@ -1,12 +1,12 @@
 from django import forms
-from django.core.exceptions import ValidationError
 from django.contrib.postgres.forms import SimpleArrayField
+from django.core.exceptions import ValidationError
 
 from .models import (
     PollCharField,
-    PollChoiceField, PollTextField,
+    PollChoiceField,
+    PollTextField,
     PollMultiChoiceField,
-    PollCharFieldAnswer,
     PollChoiceFieldAnswer,
     PollMultiChoiceFieldAnswer,
     PollTextFieldAnswer
@@ -14,14 +14,12 @@ from .models import (
 
 
 class PollCharFieldForm(forms.ModelForm):
-
     class Meta:
         model = PollCharField
         fields = ('text', 'poll')
 
 
 class PollChoiceFieldForm(forms.ModelForm):
-
     class Meta:
         model = PollChoiceField
         fields = ('text', 'poll', 'choices')
@@ -30,14 +28,12 @@ class PollChoiceFieldForm(forms.ModelForm):
 
 
 class PollTextFieldForm(forms.ModelForm):
-
     class Meta:
         model = PollTextField
         fields = ('text', 'poll')
 
 
 class PollMultiChoiceFieldForm(forms.ModelForm):
-
     class Meta:
         model = PollMultiChoiceField
         fields = ('text', 'choices', 'poll')
@@ -45,15 +41,12 @@ class PollMultiChoiceFieldForm(forms.ModelForm):
     choices = SimpleArrayField(forms.CharField(max_length=100))
 
 
-class PollCharFieldAnswerForm(forms.ModelForm):
-
-    class Meta:
-        model = PollCharFieldAnswer
-        fields = '__all__'
+class PollCharFieldAnswerForm(forms.Form):
+    answer = forms.CharField(max_length=100, required=True)
+    field = forms.ModelChoiceField(queryset=PollCharField.objects.all(), required=True)
 
 
 class PollChoiceFieldAnswerForm(forms.ModelForm):
-
     class Meta:
         model = PollChoiceFieldAnswer
         fields = '__all__'
@@ -69,7 +62,6 @@ class PollChoiceFieldAnswerForm(forms.ModelForm):
 
 
 class PollMultiChoiceFieldAnswerForm(forms.ModelForm):
-
     class Meta:
         model = PollMultiChoiceFieldAnswer
         fields = '__all__'
@@ -90,7 +82,6 @@ class PollMultiChoiceFieldAnswerForm(forms.ModelForm):
 
 
 class PollTextFieldAnswerForm(forms.ModelForm):
-
     class Meta:
         model = PollTextFieldAnswer
         fields = '__all__'

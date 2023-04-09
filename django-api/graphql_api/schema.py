@@ -1,8 +1,9 @@
 from typing import Iterable
 
 import graphene
+from django.conf import settings
 from graphene_django import DjangoObjectType
-from graphene_django.forms.mutation import DjangoModelFormMutation
+from graphene_django.forms.mutation import DjangoModelFormMutation, DjangoFormMutation
 from graphene_django.types import ErrorType
 
 from authentication.models import User as UserModel
@@ -148,7 +149,7 @@ class CreatePoll(graphene.Mutation):
             description = ''
 
         poll = PollModel.objects.create(
-            title=title, 
+            title=title,
             owner=info.context.user,
             description=description,
         )
@@ -188,11 +189,38 @@ class AddPollMultiChoiceField(DjangoModelFormMutation):
         return_field_name = 'poll_multi_choice_field'
 
 
-class AddPollCharFieldAnswer(DjangoModelFormMutation):
-    pollcharfieldanswer = graphene.Field(PollCharFieldAnswer)
+class AddPollCharFieldAnswer(DjangoFormMutation):
+    poll_char_field_answer = graphene.Field(PollCharFieldAnswer)
 
     class Meta:
         form_class = PollCharFieldAnswerForm
+
+    @classmethod
+    def perform_mutate(cls, form: PollCharFieldAnswerForm, info):
+        user: User = info.context.user
+        try:
+            obj = PollCharFieldAnswerModel.objects.get_or_create(
+                user=user,
+                field=form.cleaned_data.get('field')
+            )
+            obj.save()
+            return cls(
+                errors=[],
+                poll_char_field_answer=obj
+            )
+        except Exception as e:
+            debug_msgs: list[str] = []
+            if settings.DEBUG:
+                debug_msgs = [
+                    str(e)
+                ]
+
+            return cls(
+                errors=[{'field': 'id',
+                         'messages': ['Something went wrong', *debug_msgs]
+                         }],
+                poll_char_field_answer=obj
+            )
 
 
 class AddPollChoiceFieldAnswer(DjangoModelFormMutation):
