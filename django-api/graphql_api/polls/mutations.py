@@ -104,6 +104,7 @@ class AddPollMultiChoiceField(DjangoModelFormMutation):
 
 class AddPollCharFieldAnswer(DjangoFormMutation):
     poll_char_field_answer = graphene.Field(PollCharFieldAnswer)
+    errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
     class Meta:
         form_class = PollCharFieldAnswerForm
@@ -138,6 +139,7 @@ class AddPollCharFieldAnswer(DjangoFormMutation):
 
 class AddPollChoiceFieldAnswer(DjangoFormMutation):
     poll_choice_field_answer = graphene.Field(PollChoiceFieldAnswer)
+    errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
     class Meta:
         form_class = PollChoiceFieldAnswerForm
@@ -173,6 +175,7 @@ class AddPollChoiceFieldAnswer(DjangoFormMutation):
 
 class AddPollTextFieldAnswer(DjangoFormMutation):
     poll_text_field_answer = graphene.Field(PollTextFieldAnswer)
+    errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
     class Meta:
         form_class = PollTextFieldAnswerForm
@@ -209,6 +212,7 @@ class AddPollTextFieldAnswer(DjangoFormMutation):
 
 class AddPollMultiChoiceFieldAnswer(DjangoFormMutation):
     poll_multi_choice_field_answer = graphene.Field(PollMultiChoiceFieldAnswer)
+    errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
     class Meta:
         form_class = PollMultiChoiceFieldAnswerForm
