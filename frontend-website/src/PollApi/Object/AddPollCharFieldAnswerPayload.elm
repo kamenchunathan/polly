@@ -31,9 +31,9 @@ field =
 
 errors :
     SelectionSet decodesTo PollApi.Object.ErrorType
-    -> SelectionSet (Maybe (List (Maybe decodesTo))) PollApi.Object.AddPollCharFieldAnswerPayload
+    -> SelectionSet (List decodesTo) PollApi.Object.AddPollCharFieldAnswerPayload
 errors object____ =
-    Object.selectionForCompositeField "errors" [] object____ (Basics.identity >> Decode.nullable >> Decode.list >> Decode.nullable)
+    Object.selectionForCompositeField "errors" [] object____ (Basics.identity >> Decode.list)
 
 
 pollCharFieldAnswer :

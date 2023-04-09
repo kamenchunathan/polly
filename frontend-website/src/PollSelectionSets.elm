@@ -1,8 +1,11 @@
 module PollSelectionSets exposing
     ( AddCharFieldAnswerPayload
-    , allPolls
     , answerMutation
+    , charFieldAnswerMutation
+    , choiceFieldAnswerMutation
+    , multiChoiceFieldAnswerMutation
     , specificPoll
+    , textFieldAnswerMutation
     )
 
 import Data.Poll exposing (Field(..), Poll)
@@ -21,7 +24,7 @@ import PollApi.Object.PollChoiceField as PollChoiceField
 import PollApi.Object.PollMultiChoiceField as PollMultiChoiceField
 import PollApi.Object.PollTextField as PollTextField
 import PollApi.Object.User as User
-import PollApi.Query exposing (poll, polls)
+import PollApi.Query exposing (poll)
 import PollApi.Scalar exposing (Id(..))
 import PollApi.Union.PollField exposing (Fragments, fragments)
 
@@ -50,13 +53,6 @@ type alias AddCharFieldAnswerPayload =
 ------------------------------------------------------------------------------------------------------------
 ----------------------------------------------- Queries ----------------------------------------------------
 ------------------------------------------------------------------------------------------------------------
-
-
-allPolls : SelectionSet (List Poll) RootQuery
-allPolls =
-    Poll.pollFields (fragments charFieldFragments)
-        |> SelectionSet.map4 makePoll Poll.id Poll.title Poll.description
-        |> polls
 
 
 specificPoll : Id -> SelectionSet (Maybe Poll) RootQuery
@@ -162,7 +158,6 @@ answerMutation =
         { input =
             buildAddPollCharFieldAnswerInput
                 { answer = "I'm not really sure but I'm also not too smart"
-                , user = Id "3"
                 , field = Id "38"
                 }
                 identity

@@ -96,6 +96,7 @@ creatingPolls =
         ]
 
 
+callToAction : Html msg
 callToAction =
     H.div [ HA.class "flex flex-row justify-end w-4/6 mx-auto" ]
         [ H.a
