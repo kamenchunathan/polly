@@ -1,18 +1,19 @@
 module Pages.Polls.Pollid_ exposing (Model, Msg, page)
 
 import Components.Navbar exposing (navbar)
+import Config exposing (localApiUri)
 import Data.Poll exposing (Field(..), Poll)
 import Data.User exposing (User)
 import Gen.Params.Polls.Pollid_ exposing (Params)
 import Gen.Route as Route exposing (Route(..))
-import Graphql.Http exposing (HttpError(..), RawError(..), mutationRequest, queryRequest, send)
+import Graphql.Http exposing (HttpError(..), RawError(..), queryRequest, send)
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Maybe exposing (withDefault)
 import Page
 import PollApi.Scalar exposing (Id(..))
-import PollSelectionSets exposing (AddCharFieldAnswerPayload, answerMutation, specificPoll)
+import PollSelectionSets exposing (AnswerPayload, specificPoll)
 import RemoteData exposing (RemoteData(..))
 import Request
 import Shared
@@ -49,9 +50,11 @@ type alias Model =
 
 query_request : String -> Maybe User -> Cmd Msg
 query_request pollId user =
+    -- TODO: this function takes in a maybe user. Edit this to a user and
+    -- restrict action from being performed when user is not logged in
     specificPoll (Id pollId)
-        |> queryRequest "http://localhost:8000/graphql/"
-        |> Graphql.Http.withOperationName "initial_request"
+        |> queryRequest localApiUri
+        |> Graphql.Http.withOperationName "poll_request"
         |> Maybe.withDefault identity
             (Maybe.map
                 (\{ tokenInfo } ->
@@ -83,7 +86,7 @@ type Msg
     | SetFieldAnswer String String String
     | SubmitPoll
       -- TODO(nathan): Rename this to something more descriptive
-    | GotAnswer (Maybe AddCharFieldAnswerPayload)
+    | GotAnswer (Maybe AnswerPayload)
 
 
 propagateError : RemoteData RequestError (Maybe a) -> RemoteData RequestError a
@@ -112,7 +115,7 @@ update msg model =
             let
                 req =
                     specificPoll (Id model.requestedPollId)
-                        |> queryRequest "http://localhost:8000/graphql/"
+                        |> queryRequest localApiUri
                         |> send (resultToMessage GotPoll)
             in
             ( model, req )
@@ -156,8 +159,10 @@ update msg model =
         SubmitPoll ->
             let
                 req =
-                    mutationRequest "http://localhost:8000/graphql/" answerMutation
-                        |> send payloadResultToMessage
+                    Cmd.none
+
+                -- mutationRequest localApiUri answerMutation
+                --     |> send payloadResultToMessage
             in
             ( model, req )
 
@@ -199,7 +204,7 @@ errorToString err =
                     Other "BadUrl"
 
 
-payloadResultToMessage : Result (Graphql.Http.Error (Maybe AddCharFieldAnswerPayload)) (Maybe AddCharFieldAnswerPayload) -> Msg
+payloadResultToMessage : Result (Graphql.Http.Error (Maybe AnswerPayload)) (Maybe AnswerPayload) -> Msg
 payloadResultToMessage =
     GotAnswer << Result.withDefault Nothing
 
