@@ -4,16 +4,17 @@ import Components.Navbar exposing (navbar)
 import Config exposing (localApiUri)
 import Data.Poll exposing (Field(..), Poll)
 import Data.User exposing (User)
+import Dict exposing (Dict)
 import Gen.Params.Polls.Pollid_ exposing (Params)
 import Gen.Route as Route exposing (Route(..))
-import Graphql.Http exposing (HttpError(..), RawError(..), queryRequest, send)
+import Graphql.Http exposing (HttpError(..), RawError(..), mutationRequest, queryRequest, send)
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Maybe exposing (withDefault)
 import Page
 import PollApi.Scalar exposing (Id(..))
-import PollSelectionSets exposing (AnswerPayload, specificPoll)
+import PollSelectionSets exposing (AnswerPayload, answerPoll, specificPoll)
 import RemoteData exposing (RemoteData(..))
 import Request
 import Shared
@@ -43,6 +44,7 @@ type RequestError
 type alias Model =
     { requestedPollId : String
     , poll : RemoteData RequestError Poll
+    , pollResponses : RemoteData RequestError (Dict String (Maybe AnswerPayload))
     , req : Request.With Params
     , user : Maybe User
     }
@@ -69,8 +71,9 @@ init : Request.With Params -> Maybe User -> ( Model, Cmd Msg )
 init ({ params } as req) user =
     ( { requestedPollId = params.pollid
       , poll = NotAsked
+      , pollResponses = NotAsked
       , req = req
-      , user = Nothing
+      , user = user
       }
     , query_request params.pollid user
     )
@@ -82,11 +85,18 @@ init ({ params } as req) user =
 
 type Msg
     = GetData
-    | GotPoll (RemoteData (Graphql.Http.Error (Maybe Poll)) (Maybe Poll))
+    | GotPoll
+        (RemoteData
+            (Graphql.Http.Error (Maybe Poll))
+            (Maybe Poll)
+        )
     | SetFieldAnswer String String String
     | SubmitPoll
-      -- TODO(nathan): Rename this to something more descriptive
-    | GotAnswer (Maybe AnswerPayload)
+    | GotAnswerResponses
+        (RemoteData
+            (Graphql.Http.Error (Dict String (Maybe AnswerPayload)))
+            (Dict String (Maybe AnswerPayload))
+        )
 
 
 propagateError : RemoteData RequestError (Maybe a) -> RemoteData RequestError a
@@ -159,19 +169,51 @@ update msg model =
         SubmitPoll ->
             let
                 req =
-                    Cmd.none
+                    RemoteData.map (\poll -> poll.fields) model.poll
+                        |> RemoteData.withDefault []
+                        |> answerPoll
+                        |> mutationRequest localApiUri
+                        |> Graphql.Http.withOperationName "poll_request"
+                        |> Maybe.withDefault identity
+                            (Maybe.map
+                                (\{ tokenInfo } ->
+                                    Graphql.Http.withHeader "Authorization" ("Bearer " ++ tokenInfo.authToken)
+                                )
+                                model.user
+                            )
+                        |> send payloadResultToMessage
 
-                -- mutationRequest localApiUri answerMutation
-                --     |> send payloadResultToMessage
+                _ =
+                    Debug.log "wow"
+                        (Maybe.map
+                            (\{ tokenInfo } ->
+                                Graphql.Http.withHeader "Authorization" ("Bearer " ++ tokenInfo.authToken)
+                            )
+                            model.user
+                        )
             in
             ( model, req )
 
-        GotAnswer _ ->
-            -- let
-            --     _ =
-            --         Debug.log "answer res" a
-            -- in
-            ( model, Cmd.none )
+        GotAnswerResponses resp ->
+            let
+                toLocalError : Graphql.Http.Error (Dict String (Maybe AnswerPayload)) -> RequestError
+                toLocalError _ =
+                    Other "Something went wrong"
+            in
+            ( { model
+                | pollResponses = RemoteData.mapError toLocalError resp
+              }
+            , Cmd.none
+            )
+
+
+payloadResultToMessage :
+    Result
+        (Graphql.Http.Error (Dict String (Maybe AnswerPayload)))
+        (Dict String (Maybe AnswerPayload))
+    -> Msg
+payloadResultToMessage =
+    GotAnswerResponses << RemoteData.fromResult
 
 
 resultToMessage : (RemoteData e a -> Msg) -> Result e a -> Msg
@@ -202,11 +244,6 @@ errorToString err =
 
                 BadUrl _ ->
                     Other "BadUrl"
-
-
-payloadResultToMessage : Result (Graphql.Http.Error (Maybe AnswerPayload)) (Maybe AnswerPayload) -> Msg
-payloadResultToMessage =
-    GotAnswer << Result.withDefault Nothing
 
 
 withAnswerText : String -> Field -> Field

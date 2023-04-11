@@ -37,3 +37,19 @@ type alias Poll =
     , description : String
     , fields : List Field
     }
+
+
+fieldId : Field -> String
+fieldId field =
+    case field of
+        CharField { id } ->
+            id
+
+        TextField { id } ->
+            id
+
+        ChoiceField { id } ->
+            id
+
+        MultiChoiceField { id } ->
+            id

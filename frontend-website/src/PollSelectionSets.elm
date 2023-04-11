@@ -9,7 +9,7 @@ module PollSelectionSets exposing
     , textFieldAnswerMutation
     )
 
-import Data.Poll exposing (Field(..), Poll)
+import Data.Poll exposing (Field(..), Poll, fieldId)
 import Dict exposing (Dict)
 import Graphql.Operation exposing (RootQuery)
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
@@ -176,7 +176,7 @@ answerPoll :
     List Field
     -> SelectionSet (Dict String (Maybe AnswerPayload)) Graphql.Operation.RootMutation
 answerPoll fields =
-    List.map (\field -> ( "wow", answerMutation field )) fields
+    List.map (\field -> ( "addAnswer" ++ fieldId field, answerMutation field )) fields
         |> SelectionSet.dict
 
 
