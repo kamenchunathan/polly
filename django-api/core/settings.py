@@ -134,8 +134,8 @@ AUTH_USER_MODEL = 'authentication.User'
 
 AUTHENTICATION_BACKENDS = [
     'authentication.authentication.ExpiringTokenAuthentication',
+    *DEFAULT_AUTH_BACKENDS,
     'guardian.backends.ObjectPermissionBackend',
-    # *DEFAULT_AUTH_BACKENDS,
 ]
 
 # Api Token Lifetime in Seconds
