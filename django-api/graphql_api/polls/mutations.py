@@ -155,18 +155,28 @@ class AddPollChoiceFieldAnswer(DjangoFormMutation):
             if user.is_anonymous:
                 raise Exception("User is not authenticated")
 
-            obj, created = PollChoiceFieldAnswerModel.objects.get_or_create(
+            res = PollChoiceFieldAnswerModel.objects.filter(
                 user=user,
                 field=form.cleaned_data.get('field')
             )
-            if not created:
+
+            obj = None
+            if len(res) > 0:
+                obj = res[0]
                 obj.selected_choice = form.cleaned_data.get('selected_choice')
                 obj.save()
+            else:
+                obj = PollChoiceFieldAnswerModel.objects.create(
+                    user=user,
+                    **form.cleaned_data
+                )
+
             return cls(
                 errors=[],
                 poll_choice_field_answer=obj
             )
         except Exception as e:
+            print(e)
             debug_msgs: list[str] = []
             if settings.DEBUG:
                 debug_msgs = [
@@ -234,17 +244,30 @@ class AddPollMultiChoiceFieldAnswer(DjangoFormMutation):
             if user.is_anonymous:
                 raise Exception("User is not authenticated")
 
-            obj, created = PollMultiChoiceFieldAnswerModel.objects.get_or_create(
+            qs = PollMultiChoiceFieldAnswerModel.objects.filter(
                 user=user,
                 field=form.cleaned_data.get('field')
             )
-            obj.selected_choices = form.cleaned_data.get('selected_choices')
-            obj.save()
+
+            obj = None
+            if len(qs) > 0:
+                obj = qs[0]
+                obj.selected_choices = form.cleaned_data.get(
+                    'selected_choices'
+                )
+                obj.save()
+            else:
+                obj = PollMultiChoiceFieldAnswerModel.objects.create(
+                    user=user,
+                    **form.cleaned_data
+                )
             return cls(
                 errors=[],
                 poll_multi_choice_field_answer=obj
             )
+
         except Exception as e:
+            print(e)
             debug_msgs: list[str] = []
             if settings.DEBUG:
                 debug_msgs = [
