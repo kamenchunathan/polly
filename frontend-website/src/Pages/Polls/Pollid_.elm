@@ -57,13 +57,7 @@ query_request pollId user =
     specificPoll (Id pollId)
         |> queryRequest localApiUri
         |> Graphql.Http.withOperationName "poll_request"
-        |> Maybe.withDefault identity
-            (Maybe.map
-                (\{ tokenInfo } ->
-                    Graphql.Http.withHeader "Authorization" ("Bearer " ++ tokenInfo.authToken)
-                )
-                user
-            )
+        |> withAuth user
         |> send (resultToMessage GotPoll)
 
 
@@ -174,13 +168,7 @@ update msg model =
                         |> answerPoll
                         |> mutationRequest localApiUri
                         |> Graphql.Http.withOperationName "poll_request"
-                        |> Maybe.withDefault identity
-                            (Maybe.map
-                                (\{ tokenInfo } ->
-                                    Graphql.Http.withHeader "Authorization" ("Bearer " ++ tokenInfo.authToken)
-                                )
-                                model.user
-                            )
+                        |> withAuth model.user
                         |> send payloadResultToMessage
 
                 _ =
@@ -205,6 +193,17 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+withAuth : Maybe User -> Graphql.Http.Request a -> Graphql.Http.Request a
+withAuth user =
+    Maybe.withDefault identity
+        (Maybe.map
+            (\{ tokenInfo } ->
+                Graphql.Http.withHeader "Authorization" ("Bearer " ++ tokenInfo.authToken)
+            )
+            user
+        )
 
 
 payloadResultToMessage :
@@ -370,7 +369,7 @@ viewPoll poll =
             , H.form
                 [ HA.class "py-2 px-4 md:px-8" ]
                 (List.indexedMap (viewPollField poll.id) poll.fields)
-            , H.div [ HA.class "flex flex-row justify-end p-4" ] [ submitBtn poll.id ]
+            , H.div [ HA.class "flex flex-row justify-end p-4" ] [ submitBtn ]
             ]
         ]
 
@@ -474,8 +473,8 @@ viewPollField pollId i field =
                 ]
 
 
-submitBtn : String -> Html Msg
-submitBtn _ =
+submitBtn : Html Msg
+submitBtn =
     H.div [ HA.class "text-center mx-2" ]
         [ H.button
             [ HE.onClick SubmitPoll
