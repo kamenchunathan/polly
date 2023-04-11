@@ -1,6 +1,7 @@
 import graphene
 
 from django.conf import settings
+from django.contrib.auth import authenticate
 from graphene_django.types import ErrorType
 from graphene_django.forms.mutation import (
     DjangoFormMutation,
@@ -111,12 +112,16 @@ class AddPollCharFieldAnswer(DjangoFormMutation):
 
     @classmethod
     def perform_mutate(cls, form: PollCharFieldAnswerForm, info):
-        user: UserModel = info.context.user
+        user: UserModel = authenticate(info.context)
         try:
-            obj, _ = PollCharFieldAnswerModel.objects.get_or_create(
+            if user.is_anonymous:
+                raise Exception("User is not authenticated")
+
+            obj, created = PollCharFieldAnswerModel.objects.get_or_create(
                 user=user,
-                **form.cleaned_data
+                field=form.cleaned_data.get('field')
             )
+            obj.answer = form.cleaned_data.get('answer')
             obj.save()
             return cls(
                 errors=[],
@@ -132,8 +137,7 @@ class AddPollCharFieldAnswer(DjangoFormMutation):
             return cls(
                 errors=[{'field': 'id',
                          'messages': ['Something went wrong', *debug_msgs]
-                         }],
-                poll_char_field_answer=obj
+                         }]
             )
 
 
@@ -146,13 +150,17 @@ class AddPollChoiceFieldAnswer(DjangoFormMutation):
 
     @classmethod
     def perform_mutate(cls, form, info):
-        user: UserModel = info.context.user
+        user: UserModel = authenticate(info.context)
         try:
+            if user.is_anonymous:
+                raise Exception("User is not authenticated")
+
             obj, created = PollChoiceFieldAnswerModel.objects.get_or_create(
                 user=user,
-                **form.cleaned_data
+                field=form.cleaned_data.get('field')
             )
             if not created:
+                obj.selected_choice = form.cleaned_data.get('selected_choice')
                 obj.save()
             return cls(
                 errors=[],
@@ -168,8 +176,7 @@ class AddPollChoiceFieldAnswer(DjangoFormMutation):
             return cls(
                 errors=[{'field': 'id',
                          'messages': ['Something went wrong', *debug_msgs]
-                         }],
-                poll_choice_field_answer=obj
+                         }]
             )
 
 
@@ -183,13 +190,17 @@ class AddPollTextFieldAnswer(DjangoFormMutation):
 
     @classmethod
     def perform_mutate(cls, form, info):
-        user: UserModel = info.context.user
+        user: UserModel = authenticate(info.context)
         try:
+            if user.is_anonymous:
+                raise Exception("User is not authenticated")
+
             obj, created = PollTextFieldAnswerModel.objects.get_or_create(
                 user=user,
-                **form.cleaned_data
+                field=form.cleaned_data.get('field')
             )
             if not created:
+                obj.answer = form.cleaned_data.get('answer')
                 obj.save()
             return cls(
                 errors=[],
@@ -205,8 +216,7 @@ class AddPollTextFieldAnswer(DjangoFormMutation):
             return cls(
                 errors=[{'field': 'id',
                          'messages': ['Something went wrong', *debug_msgs]
-                         }],
-                poll_text_field_answer=obj
+                         }]
             )
 
 
@@ -218,13 +228,17 @@ class AddPollMultiChoiceFieldAnswer(DjangoFormMutation):
         form_class = PollMultiChoiceFieldAnswerForm
 
     @classmethod
-    def perform_mutate(cls, form, info):
-        user: UserModel = info.context.user
+    def perform_mutate(cls, form: PollMultiChoiceFieldAnswerForm, info):
+        user: UserModel = authenticate(info.context)
         try:
-            obj, _ = PollMultiChoiceFieldAnswerModel.objects.get_or_create(
+            if user.is_anonymous:
+                raise Exception("User is not authenticated")
+
+            obj, created = PollMultiChoiceFieldAnswerModel.objects.get_or_create(
                 user=user,
-                **form.cleaned_data
+                field=form.cleaned_data.get('field')
             )
+            obj.selected_choices = form.cleaned_data.get('selected_choices')
             obj.save()
             return cls(
                 errors=[],
@@ -238,8 +252,9 @@ class AddPollMultiChoiceFieldAnswer(DjangoFormMutation):
                 ]
 
             return cls(
-                errors=[{'field': 'id',
-                         'messages': ['Something went wrong', *debug_msgs]
-                         }],
-                poll_multi_choice_field_answer=obj
+                errors=[
+                    {'field': 'id',
+                     'messages': ['Something went wrong', *debug_msgs]
+                     }
+                ]
             )

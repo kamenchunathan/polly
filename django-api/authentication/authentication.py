@@ -5,9 +5,7 @@ from .models import ApiToken
 
 
 class ExpiringTokenAuthentication(BaseBackend):
-    """"""
-
-    def authenticate(self, request, key=None):
+    def authenticate(self, request, key=None, **kwargs):
         if key is None:
             auth_header = request.headers.get('Authorization')
             if auth_header is None:
