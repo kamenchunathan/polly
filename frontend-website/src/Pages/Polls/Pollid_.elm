@@ -2,6 +2,7 @@ module Pages.Polls.Pollid_ exposing (Model, Msg, page)
 
 import Components.Navbar exposing (navbar)
 import Data.Poll exposing (Field(..), Poll)
+import Data.User exposing (User)
 import Gen.Params.Polls.Pollid_ exposing (Params)
 import Gen.Route as Route exposing (Route(..))
 import Graphql.Http exposing (HttpError(..), RawError(..), mutationRequest, queryRequest, send)
@@ -42,20 +43,26 @@ type alias Model =
     { requestedPollId : String
     , poll : RemoteData RequestError Poll
     , req : Request.With Params
-    , user : Maybe Shared.User
+    , user : Maybe User
     }
 
 
-query_request : String -> Maybe Shared.User -> Cmd Msg
+query_request : String -> Maybe User -> Cmd Msg
 query_request pollId user =
     specificPoll (Id pollId)
         |> queryRequest "http://localhost:8000/graphql/"
         |> Graphql.Http.withOperationName "initial_request"
-        |> Maybe.withDefault identity (Maybe.map (\{ authToken } -> Graphql.Http.withHeader "Authorization" ("Bearer " ++ authToken)) user)
+        |> Maybe.withDefault identity
+            (Maybe.map
+                (\{ tokenInfo } ->
+                    Graphql.Http.withHeader "Authorization" ("Bearer " ++ tokenInfo.authToken)
+                )
+                user
+            )
         |> send (resultToMessage GotPoll)
 
 
-init : Request.With Params -> Maybe Shared.User -> ( Model, Cmd Msg )
+init : Request.With Params -> Maybe User -> ( Model, Cmd Msg )
 init ({ params } as req) user =
     ( { requestedPollId = params.pollid
       , poll = NotAsked

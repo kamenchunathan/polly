@@ -4,12 +4,13 @@ module PollSelectionSets exposing
     , charFieldAnswerMutation
     , choiceFieldAnswerMutation
     , multiChoiceFieldAnswerMutation
+    , multipleAnswers
     , specificPoll
     , textFieldAnswerMutation
     )
 
 import Data.Poll exposing (Field(..), Poll)
-import Data.User exposing (User)
+import Dict exposing (Dict)
 import Graphql.Operation exposing (RootQuery)
 import Graphql.SelectionSet as SelectionSet exposing (SelectionSet)
 import PollApi.InputObject exposing (buildAddPollCharFieldAnswerInput)
@@ -23,7 +24,6 @@ import PollApi.Object.PollCharFieldAnswer as PollCharFieldAnswer
 import PollApi.Object.PollChoiceField as PollChoiceField
 import PollApi.Object.PollMultiChoiceField as PollMultiChoiceField
 import PollApi.Object.PollTextField as PollTextField
-import PollApi.Object.User as User
 import PollApi.Query exposing (poll)
 import PollApi.Scalar exposing (Id(..))
 import PollApi.Union.PollField exposing (Fragments, fragments)
@@ -38,7 +38,6 @@ type alias ApiError =
 type alias AnswerPayload =
     { id : String
     , answer : String
-    , user : User
     }
 
 
@@ -123,17 +122,12 @@ charFieldFragments =
 charFieldAnswer : SelectionSet AnswerPayload PollCharFieldAnswer
 charFieldAnswer =
     let
-        makeUser (Id userId) =
-            User userId
-
         makeAnswerPayload (Id fieldId) =
             AnswerPayload fieldId
     in
-    SelectionSet.map2 makeUser User.id User.username
-        |> PollCharFieldAnswer.user
-        |> SelectionSet.map3 makeAnswerPayload
-            PollCharFieldAnswer.id
-            PollCharFieldAnswer.answer
+    SelectionSet.map2 makeAnswerPayload
+        PollCharFieldAnswer.id
+        PollCharFieldAnswer.answer
 
 
 
@@ -149,6 +143,13 @@ addPollCharFieldAnswerPayload =
         AddPollCharFieldAnswerPayload.clientMutationId
         (AddPollCharFieldAnswerPayload.pollCharFieldAnswer charFieldAnswer)
         (AddPollCharFieldAnswerPayload.errors (SelectionSet.map2 ApiError ErrorType.field ErrorType.messages))
+
+
+multipleAnswers : SelectionSet (Dict String (Maybe AddCharFieldAnswerPayload)) Graphql.Operation.RootMutation
+multipleAnswers =
+    SelectionSet.dict
+        [ ( "wow", answerMutation )
+        ]
 
 
 answerMutation : SelectionSet (Maybe AddCharFieldAnswerPayload) Graphql.Operation.RootMutation
