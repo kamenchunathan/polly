@@ -170,15 +170,6 @@ update msg model =
                         |> Graphql.Http.withOperationName "poll_request"
                         |> withAuth model.user
                         |> send payloadResultToMessage
-
-                _ =
-                    Debug.log "wow"
-                        (Maybe.map
-                            (\{ tokenInfo } ->
-                                Graphql.Http.withHeader "Authorization" ("Bearer " ++ tokenInfo.authToken)
-                            )
-                            model.user
-                        )
             in
             ( model, req )
 
@@ -300,7 +291,7 @@ view model =
     , body =
         [ H.div
             [ HA.class "min-h-screen bg-neutral-100" ]
-            [ navbar
+            [ navbar model.user
 
             -- , header
             , content model

@@ -17,7 +17,9 @@ body : Html msg
 body =
     H.div
         []
-        [ navbar
+        [ -- hard coded emtpy user is temprorary
+          -- TODO: Add user here
+          navbar Nothing
         , header
         , content
         ]

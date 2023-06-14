@@ -1,28 +1,30 @@
 module Pages.Login exposing (Model, Msg, page)
 
 import Components.Navbar exposing (navbar)
+import Config exposing (apiTokenPath, localRootUri)
+import Data.User exposing (User)
 import Effect exposing (Effect)
 import Gen.Params.Login exposing (Params)
 import Gen.Route as Route exposing (Route(..))
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
-import Http as Http
+import Http
 import Iso8601
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Page
 import RemoteData exposing (RemoteData)
 import Request
-import Shared as Shared
+import Shared
 import Time exposing (Posix)
 import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page _ req =
+page { user } req =
     Page.advanced
-        { init = init req
+        { init = init req user
         , update = update
         , view = view
         , subscriptions = subscriptions
@@ -49,10 +51,16 @@ type alias Model =
     { login_data : LoginData
     , response : RemoteData Http.Error TokenResponse
     , req : Request.With Params
+    , current_user : Maybe User
     }
 
 
-encodeLoginData : { a | username : Maybe String, password : Maybe String } -> Encode.Value
+encodeLoginData :
+    { a
+        | username : Maybe String
+        , password : Maybe String
+    }
+    -> Encode.Value
 encodeLoginData obj =
     -- TODO: find a better way of error handling here
     Encode.object
@@ -69,14 +77,15 @@ decodeTokenResponse =
         (Decode.field "expires" Iso8601.decoder)
 
 
-init : Request.With Params -> ( Model, Effect msg )
-init req =
+init : Request.With Params -> Maybe User -> ( Model, Effect msg )
+init req current_user =
     ( { login_data =
             { username = Nothing
             , password = Nothing
             }
       , response = RemoteData.NotAsked
       , req = req
+      , current_user = current_user
       }
     , Effect.none
     )
@@ -118,7 +127,7 @@ update msg ({ login_data } as model) =
             let
                 req =
                     Http.post
-                        { url = "http://localhost:8000/auth/api-token/"
+                        { url = localRootUri ++ apiTokenPath
                         , body =
                             encodeLoginData login_data
                                 |> Http.jsonBody
@@ -133,18 +142,20 @@ update msg ({ login_data } as model) =
             let
                 -- _ =
                 --     Debug.log "" res
-                signing_eff =
+                login_eff =
                     case res of
                         RemoteData.Success user ->
                             Effect.batch
-                                [ Effect.fromShared <| Shared.Signin user
-                                , Effect.fromCmd <| Request.pushRoute Route.Home_ model.req
+                                [ Shared.Signin user
+                                    |> Effect.fromShared
+                                , Request.pushRoute Route.Home_ model.req
+                                    |> Effect.fromCmd
                                 ]
 
                         _ ->
                             Effect.none
             in
-            ( { model | response = res }, signing_eff )
+            ( { model | response = res }, login_eff )
 
 
 
@@ -164,8 +175,8 @@ view : Model -> View Msg
 view model =
     { title = "Poly | Login "
     , body =
-        [ H.div [ HA.class "min-h-screen bg-neutral-100" ]
-            [ navbar
+        [ H.div [ HA.class "flex flex-col min-h-screen bg-neutral-100" ]
+            [ navbar Nothing
             , login_form model
             ]
         ]
@@ -173,47 +184,68 @@ view model =
 
 
 login_form : Model -> Html Msg
-login_form _ =
+login_form { login_data } =
     H.div
-        [ HA.class "w-4/6 mx-auto" ]
-        [ H.form
-            [ HA.class "flex justify-center"
-            , HE.onSubmit PerformLogin
-            ]
-            [ H.div []
-                [ H.label
-                    [ HA.for "username-input" ]
-                    [ H.text "Username" ]
-                , H.input
-                    [ HA.id "username-input"
-                    , HA.type_ "text"
-                    , HA.class ""
-                    , HA.attribute "autocomplete" "username email"
-                    , HA.autofocus True
-                    , HE.onInput UpdateUsername
-                    ]
-                    []
-                ]
-            , H.div []
-                [ H.label
-                    [ HA.for "password-input" ]
-                    [ H.text "Password" ]
-                , H.input
-                    [ HA.id "password-input"
-                    , HA.type_ "password"
-                    , HA.name "password"
-                    , HA.attribute "autocomplete" "new-password"
-                    , HA.class ""
-                    , HE.onInput UpdatePassword
-                    ]
-                    []
-                ]
-            , H.input
-                [ HA.type_ "submit"
-                , HA.value "Login"
+        [ HA.class "grid grow" ]
+        [ H.div
+            [ HA.class "mt-28 p-8 m-auto flex flex-col bg-white rounded-md" ]
+            [ -- Header
+              H.div
+                [ HA.class "p-12 text-2xl font-extrabold text-center" ]
+                [ H.text "Login" ]
 
-                -- , HE.onClick PerformLogin
+            -- Login form
+            , H.form
+                [ HA.class "flex flex-col justify-center m-auto space-y-8"
+                , HE.onSubmit PerformLogin
                 ]
-                []
+                [ H.div
+                    []
+                    [ H.label
+                        [ HA.for "username-input"
+                        , HA.class "px-4"
+                        ]
+                        [ H.text "Username" ]
+                    , H.input
+                        [ HA.id "username-input"
+                        , HA.type_ "text"
+                        , HA.class ""
+                        , HA.attribute "autocomplete" "username email"
+                        , HA.autofocus True
+                        , HE.onInput UpdateUsername
+                        , HA.value (Maybe.withDefault "" login_data.username)
+                        ]
+                        []
+                    ]
+                , H.div []
+                    [ H.label
+                        [ HA.for "password-input"
+                        , HA.class "px-4"
+                        ]
+                        [ H.text "Password" ]
+                    , H.input
+                        [ HA.id "password-input"
+                        , HA.type_ "password"
+                        , HA.name "password"
+                        , HA.attribute "autocomplete" "new-password"
+                        , HA.class ""
+                        , HE.onInput UpdatePassword
+                        , HA.value (Maybe.withDefault "" login_data.password)
+                        ]
+                        []
+                    ]
+                , H.div [] []
+
+                -- Submit
+                , H.input
+                    [ HA.type_ "submit"
+                    , HA.value "Login"
+                    , HA.class <|
+                        "self-center px-4 py-1 rounded-md bg-slate-900 text-white "
+                            ++ " text-lg shadow-2xl"
+                    , HE.onClick PerformLogin
+                    ]
+                    []
+                ]
             ]
         ]

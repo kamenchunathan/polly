@@ -1,23 +1,58 @@
-module Pages.Home_ exposing (view)
+module Pages.Home_ exposing (Model, Msg, page)
 
 import Components.Navbar exposing (navbar)
+import Data.User exposing (User)
+import Gen.Params.Home_ exposing (Params)
 import Html as H exposing (Html)
 import Html.Attributes as HA
-import String exposing (join)
+import Page
+import Request
+import Shared
 import View exposing (View)
 
 
-view : View msg
-view =
+page : Shared.Model -> Request.With Params -> Page.With Model Msg
+page { user } _ =
+    Page.sandbox
+        { init = init user
+        , update = update
+        , view = view
+        }
+
+
+type alias Model =
+    { currentUser : Maybe User }
+
+
+init : Maybe User -> Model
+init currentUser =
+    -- let
+    --     _ =
+    --         Debug.log "Logged in user" currentUser
+    -- in
+    { currentUser = currentUser }
+
+
+type alias Msg =
+    ()
+
+
+update : Msg -> Model -> Model
+update _ model =
+    model
+
+
+view : Model -> View Msg
+view { currentUser } =
     { title = "Polls | Homepage"
-    , body = [ body ]
+    , body = [ body currentUser ]
     }
 
 
-body : Html msg
-body =
+body : Maybe User -> Html msg
+body currentUser =
     H.div [ HA.class "min-h-screen bg-neutral-100" ]
-        [ navbar
+        [ navbar currentUser
         , header
         , content
         ]
@@ -58,7 +93,7 @@ sharingPolls =
         , H.p
             []
             [ H.text <|
-                join " "
+                String.join " "
                     [ "Polly allows you create publicly available polls and share them through a permanent link,"
                     , "create private polls that require authentication or Use our platform to target the"
                     , "polls to reach your desired audience based on precise criteria that you choose such"
@@ -78,7 +113,7 @@ dataAnalysis =
         , H.p
             []
             [ H.text <|
-                join " "
+                String.join " "
                     [ "We offer a vast array of tools for summarizing, analyzing and visualizing the data you've collected"
                     ]
             ]
