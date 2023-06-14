@@ -22,7 +22,9 @@ type alias User =
     }
 
 
-encodeToken : { a | authToken : String, expiration : Time.Posix } -> Json.Value
+encodeToken :
+    { a | authToken : String, expiration : Time.Posix }
+    -> Json.Value
 encodeToken { authToken, expiration } =
     Json.object
         [ ( "authToken", Json.string authToken )
