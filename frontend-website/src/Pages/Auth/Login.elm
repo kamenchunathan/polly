@@ -1,8 +1,9 @@
-module Pages.Login exposing (Model, Msg, page)
+module Pages.Auth.Login exposing (Model, Msg, page)
 
 import Components.Navbar exposing (navbar)
 import Config exposing (apiTokenPath, localRootUri)
 import Data.User exposing (User)
+import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Login exposing (Params)
 import Gen.Route as Route exposing (Route(..))
@@ -14,10 +15,12 @@ import Iso8601
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Page
+import Platform exposing (Router)
 import RemoteData exposing (RemoteData)
 import Request
 import Shared
 import Time exposing (Posix)
+import Url exposing (Url)
 import View exposing (View)
 
 
@@ -142,13 +145,21 @@ update msg ({ login_data } as model) =
             let
                 -- _ =
                 --     Debug.log "" res
+                redirectRoute =
+                    Debug.log "Request parameters: "
+                        (Dict.get "next" model.req.query
+                            |> Maybe.andThen Url.fromString
+                            |> Maybe.map Route.fromUrl
+                            |> Maybe.withDefault Route.Home_
+                        )
+
                 login_eff =
                     case res of
                         RemoteData.Success user ->
                             Effect.batch
                                 [ Shared.Signin user
                                     |> Effect.fromShared
-                                , Request.pushRoute Route.Home_ model.req
+                                , Request.pushRoute redirectRoute model.req
                                     |> Effect.fromCmd
                                 ]
 

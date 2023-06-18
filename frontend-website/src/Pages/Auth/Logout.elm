@@ -1,4 +1,4 @@
-module Pages.Logout exposing (Model, Msg, page)
+module Pages.Auth.Logout exposing (Model, Msg, page)
 
 import Gen.Params.Logout exposing (Params)
 import Page
