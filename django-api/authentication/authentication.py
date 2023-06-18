@@ -24,9 +24,9 @@ class ExpiringTokenAuthentication(BaseBackend):
         try:
             token = ApiToken.objects.get(key=key)
         except ExpiringTokenAuthentication.DoesNotExist:
-            return None
+            return
 
         if timezone.now() > token.expires():
-            return None
+            return
 
         return token.user
