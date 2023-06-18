@@ -13,7 +13,7 @@ import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
-page shared req =
+page _ _ =
     Page.advanced
         { init = init
         , update = update
@@ -36,7 +36,7 @@ type alias Msg =
 
 
 update : Msg -> Model -> ( Model, Effect Msg )
-update () {} =
+update () _ =
     ( {}, Effect.none )
 
 
