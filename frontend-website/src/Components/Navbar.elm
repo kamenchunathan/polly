@@ -1,6 +1,7 @@
 module Components.Navbar exposing (navbar)
 
 import Data.User exposing (User)
+import Gen.Route as Route exposing (Route(..))
 import Html as H exposing (Html)
 import Html.Attributes as HA
 
@@ -18,7 +19,7 @@ navbar user =
         , H.div [] []
         , H.a
             [ HA.href "/blog"
-            , HA.class "hover:decoration-solid text-lg hover:font-semibold hover:underline decoration-solid"
+            , HA.class "hover:decoration-solid text-lg hover:underline decoration-solid"
             ]
             [ H.text "Blog" ]
         , username_or_login_link user
@@ -27,21 +28,23 @@ navbar user =
 
 username_or_login_link : Maybe User -> Html msg
 username_or_login_link maybeUser =
-    -- let
-    --     _ =
-    --         Debug.log "user" maybeUser
-    -- in
+    let
+        -- _ =
+        --     Debug.log "user" maybeUser
+        commonStyles =
+            "bg-slate-900 text-white py-2 px-4 rounded-md hover:underline"
+    in
     case maybeUser of
-        Just user ->
+        Just _ ->
             H.a
-                [ HA.href "/logout"
-                , HA.class "bg-slate-900 text-white py-2 px-4 rounded-md hover:font-semibold"
+                [ HA.href (Route.toHref Auth__Logout)
+                , HA.class commonStyles
                 ]
                 [ H.text "Log out" ]
 
         Nothing ->
             H.a
-                [ HA.href "/login"
-                , HA.class "bg-slate-900 text-white py-2 px-4 rounded-md hover:font-semibold"
+                [ HA.href (Route.toHref Auth__Login)
+                , HA.class commonStyles
                 ]
                 [ H.text "Login" ]
