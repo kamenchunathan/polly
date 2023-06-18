@@ -59,7 +59,8 @@ class PollChoiceFieldAnswerForm(forms.ModelForm):
         poll_field = cleaned_data.get('field')
         if selected_choice not in poll_field.choices:
             raise ValidationError(
-                f'Selected option must be from choices in field: {poll_field.choices}'
+                'Selected option must be from choices in field'
+                f': {poll_field.choices}'
             )
 
 
@@ -79,7 +80,8 @@ class PollMultiChoiceFieldAnswerForm(forms.ModelForm):
         for selected_choice in selected_choices:
             if selected_choice not in poll_field.choices:
                 raise ValidationError(
-                    f'Selected option must be from choices in field {poll_field.choices}'
+                    'Selected option must be from choices in field '
+                    f'{poll_field.choices}'
                 )
 
 
