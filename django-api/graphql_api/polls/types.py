@@ -2,6 +2,7 @@ import graphene
 from graphene_django import DjangoObjectType
 from polls.models import (
     Poll as PollModel,
+    PollResponse as PollResponseModel,
     PollCharField as PollCharFieldModel,
     PollCharFieldAnswer as PollCharFieldAnswerModel,
     PollChoiceField as PollChoiceFieldModel,
@@ -11,7 +12,6 @@ from polls.models import (
     PollTextField as PollTextFieldModel,
     PollTextFieldAnswer as PollTextFieldAnswerModel
 )
-from ..accounts.types import User
 
 
 class PollCharField(DjangoObjectType):
@@ -70,6 +70,11 @@ class PollField(graphene.Union):
             PollChoiceField,
             PollMultiChoiceField
         )
+
+
+class PollResponse(DjangoObjectType):
+    class Meta:
+        model = PollResponseModel
 
 
 class Poll(DjangoObjectType):

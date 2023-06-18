@@ -1,3 +1,4 @@
+from typing import Optional
 import graphene
 
 from django.conf import settings
@@ -11,12 +12,11 @@ from graphene_django.forms.mutation import (
 from authentication.models import User as UserModel
 from polls.models import (
     Poll as PollModel,
+    PollResponse as PollResponseModel,
     PollCharFieldAnswer as PollCharFieldAnswerModel,
     PollTextFieldAnswer as PollTextFieldAnswerModel,
     PollChoiceFieldAnswer as PollChoiceFieldAnswerModel,
     PollMultiChoiceFieldAnswer as PollMultiChoiceFieldAnswerModel
-
-
 )
 from polls.forms import (
     PollCharFieldForm,
@@ -28,9 +28,9 @@ from polls.forms import (
     PollChoiceFieldAnswerForm,
     PollMultiChoiceFieldAnswerForm
 )
-
 from .types import (
     Poll,
+    PollResponse,
     PollCharField,
     PollCharFieldAnswer,
     PollTextField,
@@ -103,27 +103,31 @@ class AddPollMultiChoiceField(DjangoModelFormMutation):
 #   Come up with a suitable abstraction for this perhaps by creating a
 #   superclass for the Answer mutations
 
-class AddPollCharFieldAnswer(DjangoFormMutation):
+class AddPollCharFieldAnswer(DjangoModelFormMutation):
     poll_char_field_answer = graphene.Field(PollCharFieldAnswer)
     errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
     class Meta:
         form_class = PollCharFieldAnswerForm
+        return_field_name = 'poll_char_field_answer'
 
     @classmethod
     def perform_mutate(cls, form: PollCharFieldAnswerForm, info):
-        user: UserModel = authenticate(info.context)
+        user: Optional[UserModel] = authenticate(info.context)
         try:
-            if user.is_anonymous:
+            if user is None or user.is_anonymous:
                 raise Exception("User is not authenticated")
 
-            obj, created = PollCharFieldAnswerModel.objects.get_or_create(
-                user=user,
+            poll_response, _ = PollResponseModel.objects.get_or_create(
+                user=user
+            )
+            obj, _ = PollCharFieldAnswerModel.objects.get_or_create(
+                response=poll_response,
                 field=form.cleaned_data.get('field')
             )
             obj.answer = form.cleaned_data.get('answer')
             obj.save()
-            return cls(
+            return AddPollCharFieldAnswer(
                 errors=[],
                 poll_char_field_answer=obj
             )
@@ -141,22 +145,26 @@ class AddPollCharFieldAnswer(DjangoFormMutation):
             )
 
 
-class AddPollChoiceFieldAnswer(DjangoFormMutation):
+class AddPollChoiceFieldAnswer(DjangoModelFormMutation):
     poll_choice_field_answer = graphene.Field(PollChoiceFieldAnswer)
     errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
     class Meta:
         form_class = PollChoiceFieldAnswerForm
+        return_field_name = 'poll_choice_field_answer'
 
     @classmethod
     def perform_mutate(cls, form, info):
-        user: UserModel = authenticate(info.context)
+        user: Optional[UserModel] = authenticate(info.context)
         try:
-            if user.is_anonymous:
+            if user is None or user.is_anonymous:
                 raise Exception("User is not authenticated")
 
+            poll_response, _ = PollResponseModel.objects.get_or_create(
+                user=user
+            )
             res = PollChoiceFieldAnswerModel.objects.filter(
-                user=user,
+                response=poll_response,
                 field=form.cleaned_data.get('field')
             )
 
@@ -184,13 +192,15 @@ class AddPollChoiceFieldAnswer(DjangoFormMutation):
                 ]
 
             return cls(
-                errors=[{'field': 'id',
-                         'messages': ['Something went wrong', *debug_msgs]
-                         }]
+                errors=[
+                    {'field': 'id',
+                     'messages': ['Something went wrong', *debug_msgs]
+                     }
+                ]
             )
 
 
-class AddPollTextFieldAnswer(DjangoFormMutation):
+class AddPollTextFieldAnswer(DjangoModelFormMutation):
     poll_text_field_answer = graphene.Field(PollTextFieldAnswer)
     errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
@@ -200,13 +210,15 @@ class AddPollTextFieldAnswer(DjangoFormMutation):
 
     @classmethod
     def perform_mutate(cls, form, info):
-        user: UserModel = authenticate(info.context)
+        user: Optional[UserModel] = authenticate(info.context)
         try:
-            if user.is_anonymous:
+            if user is None or user.is_anonymous:
                 raise Exception("User is not authenticated")
-
+            poll_response, _ = PollResponseModel.objects.get_or_create(
+                user=user
+            )
             obj, created = PollTextFieldAnswerModel.objects.get_or_create(
-                user=user,
+                response=poll_response,
                 field=form.cleaned_data.get('field')
             )
             if not created:
@@ -230,22 +242,26 @@ class AddPollTextFieldAnswer(DjangoFormMutation):
             )
 
 
-class AddPollMultiChoiceFieldAnswer(DjangoFormMutation):
+class AddPollMultiChoiceFieldAnswer(DjangoModelFormMutation):
     poll_multi_choice_field_answer = graphene.Field(PollMultiChoiceFieldAnswer)
     errors = graphene.NonNull(graphene.List(graphene.NonNull(ErrorType)))
 
     class Meta:
         form_class = PollMultiChoiceFieldAnswerForm
+        return_field_name = 'poll_multi_choice_field_answer'
 
     @classmethod
     def perform_mutate(cls, form: PollMultiChoiceFieldAnswerForm, info):
-        user: UserModel = authenticate(info.context)
+        user: Optional[UserModel] = authenticate(info.context)
         try:
-            if user.is_anonymous:
+            if user is None or user.is_anonymous:
                 raise Exception("User is not authenticated")
 
+            poll_response, _ = PollResponseModel.objects.get_or_create(
+                user=user
+            )
             qs = PollMultiChoiceFieldAnswerModel.objects.filter(
-                user=user,
+                response=poll_response,
                 field=form.cleaned_data.get('field')
             )
 
