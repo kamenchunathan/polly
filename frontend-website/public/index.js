@@ -14,3 +14,8 @@ app.ports.persistUserToLocalStorage.subscribe(({ authToken, expiration }) => {
   localStorage.setItem('authToken', authToken);
   localStorage.setItem('expiration', expiration);
 })
+
+app.ports.clearUserFromLocalStorage.subscribe(() => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('expiration');
+})

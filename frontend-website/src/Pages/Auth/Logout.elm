@@ -1,53 +1,75 @@
 module Pages.Auth.Logout exposing (Model, Msg, page)
 
+import Components.Navbar exposing (navbar)
+import Effect exposing (Effect)
 import Gen.Params.Logout exposing (Params)
+import Gen.Route as Route
+import Html as H exposing (Html)
+import Html.Attributes as HA
 import Page
 import Request
-import Shared
+import Shared exposing (Msg(..))
 import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
-    Page.sandbox
+    Page.advanced
         { init = init
         , update = update
         , view = view
+        , subscriptions = \_ -> Sub.none
         }
-
-
-
--- INIT
 
 
 type alias Model =
     {}
 
 
-init : Model
+init : ( Model, Effect Msg )
 init =
-    {}
+    ( {}, Effect.fromShared PerformLogout )
 
 
-
--- UPDATE
-
-
-type Msg
-    = ReplaceMe
+type alias Msg =
+    ()
 
 
-update : Msg -> Model -> Model
-update msg model =
-    case msg of
-        ReplaceMe ->
-            model
-
-
-
--- VIEW
+update : Msg -> Model -> ( Model, Effect Msg )
+update () {} =
+    ( {}, Effect.none )
 
 
 view : Model -> View Msg
 view model =
-    View.placeholder "Logout"
+    { title = "Polly | Logout"
+    , body = body model
+    }
+
+
+body : Model -> List (Html Msg)
+body _ =
+    [ navbar Nothing
+    , H.div
+        [ HA.class "h-full grid" ]
+        [ H.div
+            [ HA.class "mx-auto mt-16 mb-auto" ]
+            [ H.p
+                [ HA.class "text-2xl " ]
+                [ H.text "You have logged out" ]
+            , H.a
+                [ HA.href (Route.toHref Route.Auth__Login)
+                , HA.class "font-semibold underline"
+                ]
+                [ H.text "Log in Again"
+                ]
+            , H.div [] []
+            , H.a
+                [ HA.href (Route.toHref Route.Home_)
+                , HA.class "font-semibold underline"
+                ]
+                [ H.text "Go back home"
+                ]
+            ]
+        ]
+    ]

@@ -157,7 +157,7 @@ update msg ({ login_data } as model) =
                     case res of
                         RemoteData.Success user ->
                             Effect.batch
-                                [ Shared.Signin user
+                                [ Shared.PerformLogin user
                                     |> Effect.fromShared
                                 , Request.pushRoute redirectRoute model.req
                                     |> Effect.fromCmd

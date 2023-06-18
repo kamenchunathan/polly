@@ -34,22 +34,31 @@ init _ flags =
 
 
 type Msg
-    = Signin
+    = PerformLogin
         { authToken : String
         , expiration : Time.Posix
         }
+    | PerformLogout
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update _ msg _ =
     case msg of
-        Signin authToken ->
+        PerformLogin authToken ->
             ( { user = Just (User {} authToken) }
             , persistUserToLocalStorage (encodeToken authToken)
             )
 
+        PerformLogout ->
+            ( { user = Nothing }
+            , clearUserFromLocalStorage ()
+            )
+
 
 port persistUserToLocalStorage : Json.Value -> Cmd msg
+
+
+port clearUserFromLocalStorage : () -> Cmd msg
 
 
 subscriptions : Request -> Model -> Sub Msg
