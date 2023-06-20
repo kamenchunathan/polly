@@ -1,4 +1,5 @@
 import graphene
+from graphene import NonNull, List, Field
 from graphene_django import DjangoObjectType
 from polls.models import (
     Poll as PollModel,
@@ -12,12 +13,15 @@ from polls.models import (
     PollTextField as PollTextFieldModel,
     PollTextFieldAnswer as PollTextFieldAnswerModel
 )
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class PollCharField(DjangoObjectType):
     class Meta:
         model = PollCharFieldModel
-        exclude = ('poll',)
+        exclude = ('poll', 'char_field_answers')
 
 
 class PollCharFieldAnswer(DjangoObjectType):
@@ -29,7 +33,7 @@ class PollCharFieldAnswer(DjangoObjectType):
 class PollTextField(DjangoObjectType):
     class Meta:
         model = PollTextFieldModel
-        exclude = ('poll',)
+        exclude = ('poll', 'text_field_answers')
 
 
 class PollTextFieldAnswer(DjangoObjectType):
@@ -41,7 +45,7 @@ class PollTextFieldAnswer(DjangoObjectType):
 class PollChoiceField(DjangoObjectType):
     class Meta:
         model = PollChoiceFieldModel
-        exclude = ('poll',)
+        exclude = ('poll', 'choice_field_answers')
 
 
 class PollChoiceFieldAnswer(DjangoObjectType):
@@ -53,7 +57,7 @@ class PollChoiceFieldAnswer(DjangoObjectType):
 class PollMultiChoiceField(DjangoObjectType):
     class Meta:
         model = PollMultiChoiceFieldModel
-        exclude = ('poll',)
+        exclude = ('poll', 'multichoice_field_answers')
 
 
 class PollMultiChoiceFieldAnswer(DjangoObjectType):
@@ -78,13 +82,14 @@ class PollResponse(DjangoObjectType):
 
 
 class Poll(DjangoObjectType):
-    # owner = graphene.NonNull(graphene.Field(User))
+    # owner = NonNull(Field(User))
+    # response = Field(PollResponse)
+    # responses = NonNull(List(NonNull(Field(PollResponse))))
+    poll_fields = NonNull(List(NonNull(PollField)))
 
     class Meta:
         model = PollModel
         fields = ('id', 'title', 'description', 'owner')
-
-    poll_fields = graphene.NonNull(graphene.List(graphene.NonNull(PollField)))
 
     def resolve_poll_fields(root, info, **kwargs) -> list[PollField]:
         return [
