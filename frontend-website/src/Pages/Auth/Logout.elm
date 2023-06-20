@@ -2,7 +2,7 @@ module Pages.Auth.Logout exposing (Model, Msg, page)
 
 import Components.Navbar exposing (navbar)
 import Effect exposing (Effect)
-import Gen.Params.Logout exposing (Params)
+import Gen.Params.Auth.Logout exposing (Params)
 import Gen.Route as Route
 import Html as H exposing (Html)
 import Html.Attributes as HA

@@ -5,7 +5,7 @@ import Config exposing (apiTokenPath, localRootUri)
 import Data.User exposing (User)
 import Dict
 import Effect exposing (Effect)
-import Gen.Params.Login exposing (Params)
+import Gen.Params.Auth.Login exposing (Params)
 import Gen.Route as Route exposing (Route(..))
 import Html as H exposing (Html)
 import Html.Attributes as HA
