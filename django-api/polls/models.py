@@ -3,7 +3,10 @@ from django.contrib.postgres.fields import ArrayField
 from guardian.shortcuts import assign_perm
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-from authentication.models import User
+from django.contrib.auth import get_user_model
+
+
+User = get_user_model()
 
 
 class Poll(models.Model):

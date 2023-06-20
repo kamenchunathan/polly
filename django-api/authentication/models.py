@@ -11,17 +11,17 @@ from core.settings import TOKEN_LIFETIME
 class User(AbstractUser):
     email = models.EmailField(unique=True, blank=False, null=False)
 
-    @property
-    def is_anonymous(self) -> bool:
-        """
-        For compatibility with the guardian anonymous user which is different
-        from the django anonymous user in that it has an instance which is
-        not true for django's anonymous user
-
-        Returns True if the user is the django anonymous user or the guardian
-        anonymous user
-        """
-        return super().is_anonymous or User.get_anonymous() == self
+    # @property
+    # def is_anonymous(self) -> bool:
+    #     """
+    #     For compatibility with the guardian anonymous user which is different
+    #     from the django anonymous user in that it has an instance which is
+    #     not true for django's anonymous user
+    #
+    #     Returns True if the user is the django anonymous user or the guardian
+    #     anonymous user
+    #     """
+    #     return super().is_anonymous or User.get_anonymous() == self
 
 
 class ApiToken(models.Model):

@@ -81,7 +81,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'poll_app',
+        'NAME': 'polly',
         'HOST': 'localhost',
         'PORT': '5432',
         'USER': 'django_default',
@@ -136,7 +136,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'authentication.User'
 
 AUTHENTICATION_BACKENDS = [
-    'authentication.authentication.ExpiringTokenAuthentication',
+    # 'authentication.authentication.ExpiringTokenAuthentication',
     *DEFAULT_AUTH_BACKENDS,
     'guardian.backends.ObjectPermissionBackend',
 ]
