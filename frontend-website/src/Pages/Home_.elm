@@ -3,6 +3,7 @@ module Pages.Home_ exposing (Model, Msg, page)
 import Components.Navbar exposing (navbar)
 import Data.User exposing (User)
 import Gen.Params.Home_ exposing (Params)
+import Gen.Route exposing (Route(..), toHref)
 import Html as H exposing (Html)
 import Html.Attributes as HA
 import Page
@@ -135,7 +136,7 @@ callToAction : Html msg
 callToAction =
     H.div [ HA.class "flex flex-row justify-end w-4/6 mx-auto" ]
         [ H.a
-            [ HA.href "/signup"
+            [ HA.href (toHref Auth__Signup)
             , HA.class "px-4 bg-slate-900 p-2 rounded-md text-lg text-white m-2"
             ]
             [ H.text "Get Started with Polly" ]
